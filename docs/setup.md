@@ -5,7 +5,7 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 ## Prerequisites
 
 - [Node.js 18+](https://nodejs.org) and the [GitHub CLI](https://cli.github.com), authenticated: `gh auth login`.
-- A GitHub repository. **Private is recommended** (see [security.md](security.md)).
+- A GitHub repository. **Private is recommended** (see [security.md](security.md)). **GitHub Issues must be enabled** (Settings → General → Features → Issues); forks have them off by default, and `mesh doctor` fails until you turn them on.
 - Every member has their own GitHub account and their own agent.
 
 ## For the team owner (once)

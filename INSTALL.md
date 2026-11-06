@@ -46,6 +46,8 @@ gh repo clone OWNER/REPO && cd REPO      # skip if you are already inside it
 test -f .issuemesh/team.json && echo "IssueMesh is set up here"
 ```
 
+Check Issues are on: `gh repo view --json hasIssuesEnabled -q .hasIssuesEnabled` must print `true`. If it prints `false` (forks start that way), **ASK** the repo owner to enable Settings → General → Features → Issues; nothing in IssueMesh works without it.
+
 No `.issuemesh/team.json`: the team has not set IssueMesh up yet. Setup is a one-time job for the repo owner, see [docs/setup.md](docs/setup.md) (`mesh init --member handle:login ...`). **ASK** the human whether you should do it.
 
 ## 4. Join the team
