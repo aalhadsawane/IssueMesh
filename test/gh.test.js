@@ -137,3 +137,16 @@ test('conditional: gh missing from PATH is a clear GhError', async () => {
   test.after(() => fs.rmSync(empty, { recursive: true, force: true }));
   await assert.rejects(createConditional({ env: { PATH: empty } })('p', null), (e) => e instanceof GhError && e.code === 'ENOENT');
 });
+
+test('parseRemoteSlug handles https, ssh, scp-style and .git suffixes', () => {
+  const { parseRemoteSlug } = require('../lib/gh');
+  for (const [u, want] of [
+    ['https://github.com/jarjlol/diffullama', 'jarjlol/diffullama'],
+    ['https://github.com/jarjlol/diffullama.git\n', 'jarjlol/diffullama'],
+    ['git@github.com:aalhadsawane/IssueMesh.git', 'aalhadsawane/IssueMesh'],
+    ['ssh://git@github.com/o/r.name.git', 'o/r.name'],
+    ['https://x-access-token:abc@github.com/o/r/', 'o/r'],
+  ]) assert.equal(parseRemoteSlug(u), want, u);
+  assert.equal(parseRemoteSlug('https://gitlab.com/o/r'), null);
+  assert.equal(parseRemoteSlug(''), null);
+});
