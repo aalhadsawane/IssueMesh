@@ -42,6 +42,8 @@ Then run your agent: `/issuemesh:work` in Claude Code, or tell any agent "follow
 
 ### Start IssueMesh in a new repo (team owner, once)
 
+First make sure **Issues are enabled** on the repo (Settings → General → Features → Issues). Forks have them switched off by default, and IssueMesh cannot work without them.
+
 ```bash
 cd your-repo
 mesh init --member aalhad:aalhadsawane --member ben:ben-github

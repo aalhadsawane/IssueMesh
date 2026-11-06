@@ -59,3 +59,7 @@ IssueMesh has no server. Data lives in GitHub and goes to whichever model provid
 
 **Can I customize the rules?**
 Policy knobs live in `team.json` (leases, WIP, windows, merge policy, triage rotation). The label set and marker format are part of protocol v1 and are not meant to be forked casually; for deeper changes see [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## `mesh doctor` says Issues are disabled, or the setup run warns "Issues has been disabled". What now?
+
+The repo is probably a fork. GitHub turns Issues off on forks. A repo admin enables them under Settings → General → Features → Issues, then re-run the referee's `setup` task (Actions → IssueMesh Referee → Run workflow → `setup`) to create the Board.

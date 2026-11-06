@@ -36,3 +36,15 @@ test('join: custom handle and several agents; idempotent; handle clash; dry-run'
   r = await env.run(['join', '--handle', 'eve', '--agents', 'Bad Name'], { login: 'eve-gh' });
   assert.equal(r.code, 2);
 });
+
+test('doctor: fails clearly when Issues are disabled on the repo (forks)', async () => {
+  const env = makeEnv({ team: TEAM, user: 'aalhad-gh' });
+  test.after(() => env.cleanup());
+  const orig = env.fake.transport;
+  env.fake.transport = async (method, p, body) => (method === 'GET' && p === 'repos/o/r' ? { has_issues: false } : orig(method, p, body));
+  const r = await env.run(['doctor', '--json'], { login: 'aalhad-gh' });
+  const c = r.json().checks.find((x) => x.name === 'GitHub Issues enabled');
+  assert.ok(c && !c.ok);
+  assert.match(c.detail, /Settings > General/);
+  assert.equal(r.code, 1);
+});
