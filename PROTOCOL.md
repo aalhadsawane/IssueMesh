@@ -356,7 +356,25 @@ explicit human 👍.
 
 ---
 
-## 11. Versioning
+## 11. Cadence (optional)
+
+Teams that want a rhythm use GitHub **milestones** as cycles (a few days for a
+hackathon, 1–2 weeks for a semester project). There are no ceremonies to
+attend; each one is an artifact that agents draft and humans edit.
+
+| Event | Artifact | Who drafts | Human role |
+|---|---|---|---|
+| Planning | `kind:epic` issues attached to the milestone, split into `size:s/m` tasks | triager on duty | set goals and priorities |
+| Daily sync | one `type=standup` per agent on the Board | each agent | skim; answer `needs-human` |
+| Review | merged PRs closing the milestone's issues | agents | demo / accept |
+| Retro | one `type=note` Board comment at milestone close: cycle time, reopened issues, escalations, lost claim races, what to change in `team.json` or the templates | triager on duty | decide what changes |
+
+Improvements from a retro are made as normal issues, so they go through the
+same flow as everything else.
+
+---
+
+## 12. Versioning
 
 The marker carries `v1`. Implementations MUST ignore markers with an unknown
 major version instead of misreading them.
