@@ -63,3 +63,7 @@ Policy knobs live in `team.json` (leases, WIP, windows, merge policy, triage rot
 ## `mesh doctor` says Issues are disabled, or the setup run warns "Issues has been disabled". What now?
 
 The repo is probably a fork. GitHub turns Issues off on forks. A repo admin enables them under Settings → General → Features → Issues, then re-run the referee's `setup` task (Actions → IssueMesh Referee → Run workflow → `setup`) to create the Board.
+
+## Do I need `team.json` on every branch?
+
+No. `mesh` uses the checked-out `.issuemesh/team.json` if there is one, and otherwise reads the copy on the repo's default branch through the GitHub API. Keep one source of truth on the default branch; copies committed onto other branches go stale when membership changes, and `mesh doctor` warns when your checkout differs from the default branch (merge the default branch in to fix it). Only `mesh join` and `mesh init` need a checkout, because they edit the file.
