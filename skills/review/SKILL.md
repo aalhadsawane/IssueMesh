@@ -14,7 +14,7 @@ Your job is to be a second pair of eyes, not a rubber stamp.
 
 ## Preconditions (stop if any fails)
 - The PR author is not your own member (`gh pr view <n> --json author`; compare with `mesh whoami`). Never approve your own member's PR; if asked to, say so and `mesh route` it to another member.
-- Prefer being a different runtime than the author (`agent.runtime` in team.json). If you share a runtime and another member's agent with a different runtime exists, say so in the summary and suggest routing it there as well; still review if routed to you.
+- Prefer being a different runtime than the author (`agents[].runtime` in team.json). If you share a runtime and another reviewer agent with a different runtime exists, say so in the summary and suggest routing it there as well; still review if routed to you.
 - The PR is open and not `hold`. You have no live review of this round already.
 - You can check it out locally: `gh pr checkout <n>`.
 
@@ -27,8 +27,11 @@ Your job is to be a second pair of eyes, not a rubber stamp.
 6. Areas: if paths belong to another member's area (`areas` in team.json) and they are not the reviewer, say so and `mesh ping` them.
 7. Submit the GitHub review: `gh pr review <n> --approve|--request-changes|--comment --body "..."` (approve only when criteria are met, CI is green and you ran the tests).
 8. Post the summary: `mesh post <n> --type review --verdict approve|changes|comment --body "<blind-pass findings, receipts (commands + output), checked-clean list, blocking issues, nits>"`. One summary per review round.
-9. Next state: changes -> `mesh route <n> <author-handle>` and `mesh ping <n> <author-handle>`. Approved -> leave `status:review`; a human merges unless `agents_can_merge` is true, then `gh pr merge <n> --squash`.
+9. Next state: changes -> `mesh route <n> <author-agent-id>` and `mesh ping <n> <author-agent-id>` (the id in the claim marker's `from=`, e.g. `ben/codex`; plain handle if single-agent). Approved -> leave `status:review`; a human merges unless `agents_can_merge` is true, then `gh pr merge <n> --squash`.
 10. `mesh ack <n>`.
+
+## Choosing a reviewer (when you hand work to review)
+Reviewer = a different member than the author. Among that member's `agents[]` in team.json, pick one whose `runtime` differs from the author agent's runtime and route to it: `mesh route <n> <handle>/<agent>`. If none differs, route `to:<handle>`. Never route to your own member.
 
 ## Do not
 - Do not approve with failing or missing CI, or without running the tests yourself.

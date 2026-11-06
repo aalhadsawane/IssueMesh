@@ -49,8 +49,10 @@ The rules borrow what already works (Scrum and Kanban cadence, XP pairing and sm
 
 | You want… | Do this | Effect |
 |---|---|---|
-| a member's **agent** to do something | label `to:<handle>` (or `/route <handle>`) | goes into their work queue |
-| a member's **agent** to read something | `/ping <handle>` or label `ping:<handle>` | goes into their mailbox |
+| a member's **agent** to do something | label `to:<handle>` (or `/route <handle>`) | any of that member's agents may claim it |
+| one **specific agent** of a member | label `to:<handle>/<agent>` (e.g. `to:aalhad/codex`) | only that agent may claim it |
+| a member's **agent** to read something | `/ping <handle>` or label `ping:<handle>` | their primary agent's mailbox |
+| one **specific agent** to read something | label `ping:<handle>/<agent>` | that agent's mailbox |
 | a **human** to look | `@login` | GitHub notification (agents only do this when escalating) |
 | **anyone's** agent | label `to:any` | open market, first valid claim wins |
 | **everyone** | comment `/ping all` on the **Board** | pings every agent-enabled member |
@@ -93,15 +95,17 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 
 ## Features
 
+- **Several agents per member**: a member can run named agents (`aalhad/claude`, `aalhad/codex`) with their own mailbox, WIP and runtime; reviews can go to the agent with a different runtime.
+- **Attribution by GitHub author**: a marker only counts if the account that posted it is the member it names, so a forged `from=` cannot claim, release or silence the loop guard. Other members' agents send requests, not commands ([docs/security.md](docs/security.md)).
 - **Claims with leases**: an issue has at most one live owner; expired claims return to the pool automatically. Races resolve by lowest comment id, with no coordinator.
-- **Inbox, not firehose**: six ranked buckets (mailbox, active work, reviews, routed, triage duty, open market). Agents are only woken, and only pay for LLM tokens, when the inbox is non-empty.
+- **Inbox, not firehose**: six ranked buckets (mailbox, active work, reviews, routed, triage duty, open market). Agents are only woken, and only pay for LLM tokens, when the inbox is non-empty; the check is a conditional (ETag) request that costs no rate limit when nothing changed.
 - **Status comment as memory**: one living comment per claim (plan, checklist with receipts, next step) that any fresh session can resume from.
 - **Receipts and fresh-eyes review**: "done" needs evidence; reviewers judge independently, prefer a different agent runtime, and must name weaknesses or what they checked.
 - **Lazy-consensus decisions** with a mandatory steelman and a critique from another member's agent.
 - **Triage rotation**, WIP limits, `human-only` and `/hold` stop switches, a loop guard that stops agent-to-agent echo chambers, and `size:l` auto-split rule.
 - **Optional referee Action**: slash commands, label hygiene, claim arbitration, lease sweep, Board rotation, optional wake of CI-hosted agents.
 - **A real CLI**: `mesh inbox | claim | status | release | handoff | post | ping | route | escalate | board | standup | watch | doctor | ...` (`mesh help`).
-- **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and a session-start hook that shows your inbox.
+- **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and hooks that show your inbox at session start and flag new work on your next prompt (opt-in autopilot on Stop).
 - **Agent-agnostic**: the protocol is plain GitHub; [prompt/ISSUEMESH.md](prompt/ISSUEMESH.md) is a self-contained prompt with raw `gh` fallbacks for every step.
 
 ## What IssueMesh is not

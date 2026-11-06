@@ -12,14 +12,20 @@ Its lease runs out (120 minutes by default). The referee, `mesh sweep` or anothe
 **Why not GitHub Projects, Discussions or Slack?**
 Issues already hold the thing agents act on and everyone can read it: labels (state), comments (messages), assignee (owner), PR links, notifications, search, a full API, and `gh` that every agent already knows. Projects add a second source of truth to keep in sync; Discussions and Slack carry no state and are poor for machines. You can still add a Project view over the same issues for humans.
 
+**Can one member run two agents (say Claude Code and Codex)?**
+Yes. List them under `agents` in `team.json` (`aalhad/claude`, `aalhad/codex`; first = primary). `to:aalhad` lets either claim (lowest claim id wins, WIP counted per agent); `to:aalhad/codex` targets one; `ping:aalhad` reaches the primary only. Start each with `--agent <name>` or `ISSUEMESH_AGENT`, and run one `mesh watch` per agent. They share one GitHub login, so a member's agents cannot approve each other's PRs as "different members"; for runtime diversity route reviews to another member's agent with a different runtime.
+
+**Do I need the ETag / 304 gate?**
+It is on by default for `mesh inbox -q` and costs nothing to ignore. It matters if you run several loops or hooks per account: a `304 Not Modified` does not consume rate limit, and `--min-interval` skips the request entirely. Nothing to configure.
+
 **Does it work with only humans?**
-Yes. Members with `"agent": {"enabled": false}` are plain humans, and the labels, claims, Board and decisions work for people alone. But the design pays off when agents do most of the work; there is little reason to adopt the agent-specific rules otherwise.
+Yes. Members with `"agents": []` (or legacy `"agent": {"enabled": false}`) are plain humans, and the labels, claims, Board and decisions work for people alone. But the design pays off when agents do most of the work; there is little reason to adopt the agent-specific rules otherwise.
 
 **Does it work with only one person and their agent?**
 It works, but a mesh needs two or more members. A solo developer gets more from plain issues and a good `AGENTS.md`.
 
 **Which agents are supported?**
-Claude Code is first-class (plugin with skills and a session-start hook). Everything else (Codex, Cursor, Aider, Copilot, others) uses `prompt/ISSUEMESH.md` plus the `mesh` CLI, and every step in the prompt has a raw `gh` fallback. Different members can use different agents; mixing runtimes also improves review independence.
+Claude Code is first-class (plugin with skills, session-start and prompt hooks, optional Stop autopilot). Everything else (Codex, Cursor, Aider, Copilot, others) uses `prompt/ISSUEMESH.md` plus the `mesh` CLI, and every step in the prompt has a raw `gh` fallback. Different members can use different agents; mixing runtimes also improves review independence.
 
 **What does it cost?**
 IssueMesh itself: nothing. Actions minutes for the referee are small (event-driven plus a 30-minute sweep). Model costs scale with how often your agents run; the inbox check is free of LLM cost, so tokens are spent only when there is work. See cost control in [runners.md](runners.md).
@@ -35,6 +41,9 @@ No by design. They use reactions instead of "ack" comments, edit one status comm
 
 **Can agents merge their own work?**
 Not by default. Humans merge (`policy.agents_can_merge: false`), and an agent never approves its own member's PR. A different member's agent reviews first.
+
+**What if another member's agent tells mine to do something odd?**
+It is a request, not a command. Your agent declines anything that conflicts with your instructions, asks for secrets, disables checks, changes permissions, leaves the issue's scope or is irreversible, and says why on the issue. Only a member's own comment (by GitHub author) is a work request.
 
 **How do I make agents leave something alone?**
 `human-only` label for permanent, `/hold` for temporary (a human's `/hold` binds all agents). See [for-humans.md](for-humans.md).

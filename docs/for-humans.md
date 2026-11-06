@@ -6,7 +6,7 @@ You steer; agents do the work. Your jobs: say what you want, answer questions, m
 
 1. **New issue** → pick a form: *Task*, *Bug*, *Question*, *Decision*. Write a goal and **testable acceptance criteria**. That is all agents need.
 2. The issue starts in `status:triage`. The triager on duty (an agent) checks it, splits big work, sets priority and size, and routes it.
-3. To skip triage, route it yourself: comment `/route ben` (that member's agent) or `/route any` (first free agent).
+3. To skip triage, route it yourself: comment `/route ben` (any of that member's agents) or `/route any` (first free agent). To pick one agent of a member: `/route ben/codex`.
 4. Urgent? `/priority p0`. Big? `/size l` and it gets split.
 5. Want it yourself? `/claim` (or assign yourself). Agents will not override a live human claim.
 
@@ -22,10 +22,10 @@ One per line, at the start of a line, in a comment. Only team members' commands 
 
 | Command | Effect |
 |---|---|
-| `/route <handle\|any>` | send to that member's agent / anyone's |
-| `/ping <handle…\|all>` | put it in mailboxes (`all` on the Board = everyone) |
+| `/route <handle\|handle/agent\|any>` | send to that member's agents / one named agent / anyone's |
+| `/ping <handle…\|handle/agent\|all>` | put it in mailboxes (`all` on the Board = everyone; a plain handle = that member's primary agent) |
 | `/claim` · `/release` | take it yourself / give it back |
-| `/handoff <handle>` | release + route + ping |
+| `/handoff <handle\|handle/agent>` | release + route + ping |
 | `/priority p0..p3` · `/size s\|m\|l` · `/kind <kind>` | set that label |
 | `/block #<n>` · `/unblock` | mark dependent on another issue / resume |
 | `/triage` | send back for triage |
@@ -34,7 +34,7 @@ One per line, at the start of a line, in a comment. Only team members' commands 
 
 ## Labels you will use
 
-`to:<handle>` / `to:any` (who) · `status:*` (where it is) · `priority:p0..p3` · `size:s|m|l` · `kind:*` · `human-only` (agents must not touch it) · `source:external` · `status:needs-human` (waiting for you).
+`to:<handle>` / `to:<handle>/<agent>` / `to:any` (who) · `status:*` (where it is) · `priority:p0..p3` · `size:s|m|l` · `kind:*` · `human-only` (agents must not touch it) · `source:external` · `status:needs-human` (waiting for you).
 
 ## Stop agents
 
@@ -43,9 +43,13 @@ One per line, at the start of a line, in a comment. Only team members' commands 
 | pause one issue | comment `/hold` (a human `/hold` binds every agent; `/unhold` resumes) |
 | keep agents off it entirely | add the `human-only` label |
 | take it over | `/claim`, or assign yourself |
-| stop one member's agent | stop their runner (`Ctrl-C` on `mesh watch`, disable their agent workflow) or set `"agent": {"enabled": false}` in `team.json` |
+| stop one member's agent | stop their runner (`Ctrl-C` on `mesh watch`, disable their agent workflow) or set `"agents": []` (legacy `"agent": {"enabled": false}`) in `team.json`; one agent only: remove it from `agents[]` |
 | stop agent merges | already the default (`agents_can_merge: false`) |
 | a runaway agent exchange | the loop guard flags it `needs-human` after 8 agent-only comments; any human comment resets it |
+
+## Agents are not each other's boss
+
+Your agent follows you. Another member's agent can ask yours for something, but yours declines anything that conflicts with your instructions, asks for secrets or tokens, turns off checks, changes permissions, leaves the issue's scope or cannot be undone. If you want your agent to do it, say so in your own comment: a member's comment is a work request, and the author is the GitHub account that posted it.
 
 ## Answer escalations
 

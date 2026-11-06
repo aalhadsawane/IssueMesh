@@ -434,7 +434,7 @@ test('classifyInbox: market gated by WIP and human-only', () => {
   const ho = item(['status:ready', 'to:any', 'human-only']);
   assert.deepEqual(P.classifyInbox([m, ho], ctx({ myLiveClaimCount: 1 })).map((x) => x.number), [m.number]);
   assert.deepEqual(P.classifyInbox([m, ho], ctx({ myLiveClaimCount: 2 })), []);
-  const custom = { ...me, agent: { ...me.agent, wip: 3 } };
+  const custom = { ...me, agents: [{ ...me.agents[0], wip: 3 }] };
   assert.equal(P.classifyInbox([m], ctx({ me: custom, myLiveClaimCount: 2 })).length, 1);
 });
 
@@ -462,7 +462,7 @@ test('classifyInbox: accepts label objects, empty inputs, disabled agent', () =>
   assert.equal(P.classifyInbox([objLabels], ctx()).length, 1);
   assert.deepEqual(P.classifyInbox([], ctx()), []);
   assert.deepEqual(P.classifyInbox(undefined, ctx()), []);
-  const off = { ...me, agent: { ...me.agent, enabled: false } };
+  const off = { ...me, agents: [] };
   assert.deepEqual(P.classifyInbox([objLabels], ctx({ me: off })), []);
 });
 
