@@ -223,3 +223,37 @@ test('join: someone else\'s open PR with the same branch name is not touched', a
   assert.ok(!calls.some(([m]) => m === 'PATCH'));
   assert.ok(calls.some(([, p]) => p.endsWith('/pulls')));
 });
+
+
+test('join: without push access it forks, branches in the fork and opens the PR from there', async () => {
+  const env = makeEnv({ team: TEAM, writeTeam: false });
+  test.after(() => env.cleanup());
+  apiRepo.taken = true;
+  const calls = [];
+  const base = env.fake.transport;
+  apiRepo(env, TEAM, { push: false });
+  const noPush = env.fake.transport;
+  env.fake.transport = async (m, p, b) => {
+    if (m === 'POST' && p === 'repos/o/r/forks') { calls.push([m, p]); return { full_name: 'ben-gh/r' }; }
+    if (p.startsWith('repos/ben-gh/r/')) {
+      calls.push([m, p, b]);
+      if (m === 'GET' && p.includes('/git/ref/heads/main')) return { object: { sha: 'forkbase' } };
+      if (m === 'GET' && p.includes('/contents/')) return { sha: 'forkfilesha', content: '', encoding: 'base64' };
+      return {};
+    }
+    if (m === 'POST' && p === 'repos/o/r/pulls') { calls.push([m, p, b]); return { html_url: 'https://github.com/o/r/pull/11' }; }
+    return noPush(m, p, b);
+  };
+  const r = await env.run(['join', '--handle', 'ben'], { login: 'ben-gh' });
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /used your fork ben-gh\/r/);
+  assert.match(r.out, /write \(or triage\) access/);
+  assert.ok(calls.some(([m, p]) => m === 'POST' && p === 'repos/ben-gh/r/merge-upstream'), 'fork synced to the upstream tip');
+  const ref = calls.find(([m, p]) => m === 'POST' && p === 'repos/ben-gh/r/git/refs');
+  assert.deepEqual(ref[2], { ref: 'refs/heads/chore/join-ben', sha: 'forkbase' });
+  const put = calls.find(([m]) => m === 'PUT');
+  assert.equal(put[2].sha, 'forkfilesha');
+  const pr = calls.find(([m, p]) => m === 'POST' && p === 'repos/o/r/pulls')[2];
+  assert.deepEqual([pr.head, pr.base], ['ben-gh:chore/join-ben', 'main']);
+  void base;
+});

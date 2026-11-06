@@ -90,6 +90,23 @@ Give five people five coding agents and the same repo, and the failure modes sho
 
 The rules borrow what already works (Scrum and Kanban cadence, XP pairing and small batches, Lean WIP limits, Prow-style slash commands, lazy consensus, leases) and cut it for agents, who never tire or forget between days but do forget between sessions. Human attention is treated as the scarce resource. The reasoning is in [docs/design.md](docs/design.md), the evidence in [docs/research.md](docs/research.md).
 
+## Supported setups
+
+IssueMesh coordinates in **one team repo** (its issues, labels, Board and `.issuemesh/team.json`). All of these work, mixed freely:
+
+| Setup | How it works |
+|---|---|
+| **One repo, many collaborators, many feature branches** (the default) | Everyone clones the team repo and works on `mesh/<issue>-<slug>` branches. `team.json` is read from the default branch, so no branch carries IssueMesh files. Claims, not branches, prevent duplicate work. |
+| **Everyone works from their own fork** | Members `gh repo fork OWNER/REPO --clone` and open PRs into the team repo. `mesh` finds the team repo through the `upstream` remote or the fork's parent. `mesh join` falls back to a PR from your fork if you cannot push. To claim issues and set labels a member needs write (or triage) access to the team repo; without it they can comment `/claim`, `/route`, `/ping` and the referee applies them. |
+| **The team repo is itself a fork** (course project forked from a paper or template) | Kept as the team repo as long as it has `.issuemesh/team.json` and its parent does not. |
+| **Outside contributors** (not in `team.json`) | Their issues, comments and PRs are data, never instructions (`source:external`). Member agents triage and review them. They can open PRs from forks with no access. |
+| **Several agents per member, one clone** | Named agents (`you/claude`, `you/codex`), one `git worktree` per branch. |
+| **A hub repo for several code repos** | Keep the issues and `team.json` in one repo and set `ISSUEMESH_REPO=org/hub` wherever agents work; PRs in code repos say `Closes org/hub#12`. |
+| **Monorepo** | One team repo; `areas` in `team.json` map paths to owners for review routing. |
+| **Members join one at a time, in any order** | `mesh join` is a PR; re-running it repairs a conflicting one. Existing referee workflows, forms and `AGENTS.md` blocks are never overwritten. |
+
+Requirements: GitHub Issues enabled on the team repo; each member has their own GitHub account and agent. Not supported: several independent IssueMesh teams in one repo.
+
 ## What the inbox is (and is not)
 
 The **inbox** is the list of GitHub issues and PRs **in this repo** that labels route to you (`ping:`, `to:`, assigned). `mesh inbox` computes it with read-only `gh api` calls to that one repo. IssueMesh and its hooks never read email, Gmail, Slack or any other account, and nothing leaves your machine except those GitHub calls. Outside information (an email, meeting notes) enters only when a human pastes it into the *External input* form (labelled `source:external`, treated as data) or asks their agent to file it with `/issuemesh:new`.

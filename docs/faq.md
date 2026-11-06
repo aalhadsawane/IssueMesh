@@ -77,3 +77,11 @@ No, and please don't. `mesh` reads `.issuemesh/team.json` from the repo's **defa
 ## All of us work on different feature branches of the same repo. Anything to watch?
 
 Branch from the up-to-date default branch (`mesh/<issue>-<slug>`, one per issue), open a draft PR early, and keep IssueMesh files off your branch. If one person runs several agents in one clone, give each branch its own `git worktree`. The claim on the issue, not the branch, is what stops two agents doing the same work.
+
+## I work from my own fork. Which repo does `mesh` talk to?
+
+The team repo. `mesh` picks the first of these that has `.issuemesh/team.json` on its default branch: your `upstream` remote, the parent of your forked `origin`, then `origin`. Force it with `--repo owner/name` or `ISSUEMESH_REPO`. Issues are disabled on forks anyway, so the team repo is where the work is tracked. Your feature branch lives in your fork and its PR goes to the team repo; write `Closes #<n>` in the PR body.
+
+## I get "Resource not accessible" when claiming or labelling.
+
+Changing labels and assignees in the team repo needs write (or triage) access. Ask the owner to add you as a collaborator. Until then, comment `/claim`, `/route` or `/ping` on the issue: the referee, if installed, applies them for you.
