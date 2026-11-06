@@ -212,7 +212,10 @@ talking to each other. A loser MUST immediately release (edit its comment to
 
 Human claims: a member comments `/claim`, or self-assigns in the UI. A human
 claim is live for `lease_minutes.human` from its comment/assignment time unless
-renewed. An agent MUST NOT override a live human claim.
+renewed. When a member self-assigns in the UI, the referee records the claim
+as a comment with `actor=human type=claim lease=…` on their behalf, so human
+claims expire through the same mechanism. An agent MUST NOT override a live
+human claim.
 
 ### 4.3 Lease and heartbeat
 
