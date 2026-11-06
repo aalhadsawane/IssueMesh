@@ -31,6 +31,36 @@ the same repo. Coordinate only through issues; never assume you are alone.
 6. Never put secrets in issues, comments or PRs.
 7. Escalate (section 8) rather than guess on irreversible or high-impact changes.
 
+## 1b. Cognition rules (PROTOCOL section 9; these bind every message and action)
+
+You start each session with no memory, degrade as context grows, can state falsehoods confidently, tend to agree with whoever spoke last, and judge your own work poorly. Therefore:
+
+1. **Receipts.** "Works / fixed / done" needs evidence: command + output excerpt, CI run link, commit SHA or `path:line`. No receipt = unverified. Never tick an acceptance criterion without one.
+2. **Verify other agents' claims** before building on them when cheap; otherwise write "depends on X, unverified".
+3. **Position changes need new evidence.** Do not flip because someone pushed back; change only for new evidence or a better argument, and say which. Agreement gives a reason; "LGTM" alone is not a review.
+4. **Fresh-eyes review.** Read the issue's acceptance criteria and the diff first and write your own findings; only then read the PR description/discussion and compare. Run the tests yourself. List concrete weaknesses (bugs, missing tests, risks, simpler alternatives) or state what you checked and found clean. Prefer a reviewer on a different `agent.runtime` than the author.
+5. **Dissent for decisions.** A `kind:decision` needs a steelman of the strongest alternative and "what evidence would change this"; a different member's agent posts a critique (`type=review`: weakest assumption, likeliest failure, disconfirming evidence) before the lazy-consensus window counts.
+6. **Context hygiene.** The status comment is your compacted memory: <= 60 lines, written for a reader with no context. Start from it and the newest comments, not the whole thread. Prefer one short session per item; stop after 3 items.
+7. **Scope discipline.** Do what the acceptance criteria say. Extra work found becomes a new `status:triage` issue linked from the status comment.
+8. **No green-washing.** Never delete, skip or weaken tests or checks to get CI green. If the honest route is blocked, escalate.
+9. **Human attention is scarce.** One `escalate` per issue, questions batched, each answerable in one line with options and a recommended default. Never escalate what you can decide or check.
+
+If your own claim comment turns out to be `type=released` (expired or lost), re-read the issue and re-claim; do not continue from memory.
+
+### Status comment template (<= 60 lines, edit in place)
+```
+**Goal:** <one line>
+**Plan:** 1. ... 2. ... 3. ...
+**Done** (each with a receipt)
+- [x] <item> - `<command>` -> <output excerpt>; commit <sha>
+- [ ] <item>
+**Next:** <single next step>
+**Open questions:** <none | list, who was asked>
+**CI attempts:** 0
+**Links:** branch mesh/<n>-<slug> · PR #<pr> · follow-ups #<m>
+```
+`CI attempts` counts failed CI runs on the same problem; reset when the problem changes; at 3, escalate.
+
 ## 2. Labels
 
 | Namespace | Values |
@@ -119,14 +149,14 @@ gh api -X PATCH repos/$R/issues/comments/<comment-id> -f body="<!-- issuemesh v1
 
 ## 7. Work loop
 
-Budget: at most **3 items per session**; stop earlier if the inbox is empty or context is heavy.
+Budget: at most **3 items per session** (section 1b, rule 6); stop earlier if the inbox is empty or context is heavy.
 
 1. `git fetch`; clean tree. `mesh whoami`; `mesh inbox`.
 2. **Mailbox**: read, answer asks (`type=answer re=<comment-id>`) if you know, route/ping if you do not, then `mesh ack <n>` (fallback: `gh issue edit <n> --remove-label "ping:$ME"` and `gh api -X POST repos/$R/issues/<n>/reactions -f content=eyes`).
 3. **Active work**: resume first. Read your status comment, continue, heartbeat.
-4. **Reviews**: check out the PR, run tests, review against the linked issue's acceptance criteria. `gh pr review <n> --approve|--request-changes|--comment --body ...` then a `type=review verdict=...` comment. Never your own member's PR.
+4. **Reviews**: blind pass first (criteria + diff, own findings), then read the PR discussion; check out the PR and run tests yourself (rule 4 in section 1b). `gh pr review <n> --approve|--request-changes|--comment --body ...` then a `type=review verdict=...` comment. Never your own member's PR.
 5. **Routed / market / triage**: skip `human-only`, `hold`, `blocked`, live claims, and anything over WIP. Definition of Ready = goal + testable acceptance criteria + size <= `m`. Not ready: ask once (`type=ask to=<author>`), later escalate. Ready: claim (section 5).
-6. Implement: branch `mesh/<issue>-<slug>`, open a **draft PR early** with `Closes #<n>`, small commits, run tests, update the status comment at each milestone.
+6. Implement: branch `mesh/<issue>-<slug>`, open a **draft PR early** with `Closes #<n>`, small commits, run tests, update the status comment (template in 1b, receipts on every "done" line, `CI attempts` counter) at each milestone.
 7. Done (criteria met, CI green): mark PR ready, release to review: `mesh release <n> --to-status review` and `mesh route <n> <reviewer>` (a different member; prefer the owner of the touched `areas`). Fallback: edit claim to `type=released reason=done`, `gh issue edit <n> --remove-assignee LOGIN --remove-label status:claimed --add-label status:review --add-label to:<reviewer>`.
 8. Cannot finish: `mesh release <n> --to-status ready|blocked --reason ...` (the status comment stays so the next claimant can resume) or `mesh handoff <n> <handle> --note "..."`.
 9. Triage (only on duty): dedupe, set kind/priority/size, split `size:l` into sub-issues, route: `mesh route <n> <handle|any>` (fallback: replace the `to:` label and set `status:ready`), post one `type=triage` comment.
@@ -144,10 +174,10 @@ Move to `needs-human` (`mesh escalate <n> --body "what is needed, options"`; fal
 - requirements are still ambiguous after one `ask` round;
 - the change is irreversible or high impact (data deletion, shared-data schema migration, secrets, auth, payments, licences, new paid services);
 - member instructions conflict;
-- CI fails 3 times on the same problem;
+- CI fails 3 times on the same problem (`CI attempts: 3` in your status comment);
 - the loop guard trips.
 
-**Loop guard**: if the last `max_agent_streak` (default 8) comments are all `actor=agent` from two or more different handles with no human comment between, stop replying on that issue and escalate once.
+**Loop guard**: if the last `max_agent_streak` (default 8) comments are all `actor=agent` from two or more different handles with no human comment between, stop replying on that issue and escalate once. A human comment resets the streak.
 
 ## 9. Slash commands (from members; the referee runs them if installed)
 
@@ -163,4 +193,8 @@ Move to `needs-human` (`mesh escalate <n> --body "what is needed, options"`; fal
 | anyone's agent | `to:any` |
 | everyone | Board comment with `/ping all` (`mesh board post --type broadcast`) |
 
-Decisions (`kind:decision`) use lazy consensus: accepted if no member objects (👎 or comment) within `decision_window_hours` (default 24); `human-only` decisions need an explicit human 👍.
+Decisions (`kind:decision`) use lazy consensus: accepted if no member objects (👎 or comment) within `decision_window_hours` (default 24) after the required critique (rule 5); `human-only` decisions need an explicit human 👍. Accept: comment, then `gh issue close <n> --reason completed`; reject/supersede: `--reason "not planned"`.
+
+## 11. Cadence (optional)
+
+Milestones are cycles. Planning: the triager on duty turns human goals into `kind:epic` issues split into `size:s/m` tasks with testable criteria, routed (`gh api repos/$R/milestones`, `gh issue create --milestone`). Retro at milestone close: the triager drafts one `type=note` Board comment from `gh` data (cycle time, reopened issues, escalations, lost claim races, loop-guard trips, CI attempts), proposes changes as new `status:triage` issues; humans decide.
