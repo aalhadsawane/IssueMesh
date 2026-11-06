@@ -145,6 +145,8 @@ function apiRepo(env, team, { push = true } = {}) {
       return {};
     }
     if (m === 'PUT' && p === 'repos/o/r/contents/.issuemesh/team.json') { calls.push([m, p, b]); return {}; }
+    if (m === 'GET' && p.startsWith('repos/o/r/pulls?')) return apiRepo.openPrs || [];
+    if (m === 'PATCH' && p.startsWith('repos/o/r/git/refs/heads/')) { calls.push([m, p, b]); return {}; }
     if (m === 'POST' && p === 'repos/o/r/pulls') { calls.push([m, p, b]); return { html_url: 'https://github.com/o/r/pull/9' }; }
     return orig(m, p, b);
   };
@@ -186,4 +188,38 @@ test('join (default): already a member is a no-op; dry-run changes nothing; no p
   r = await env.run(['join', '--handle', 'ben'], { login: 'ben-gh' });
   assert.notEqual(r.code, 0);
   assert.match(r.err, /write access/);
+});
+
+
+test('join: re-running with our own PR still open moves it onto the latest default branch instead of opening another', async () => {
+  const env = makeEnv({ team: TEAM, writeTeam: false });
+  test.after(() => env.cleanup());
+  apiRepo.taken = true;
+  // another member merged first: the default branch now has chen, our open PR (for ben) is stale
+  const newer = { ...TEAM, members: [...TEAM.members, { handle: 'chen', github: 'chen-gh', agents: [{ name: 'claude', runtime: 'claude-code' }] }] };
+  const calls = apiRepo(env, newer);
+  apiRepo.openPrs = [{ html_url: 'https://github.com/o/r/pull/9', user: { login: 'ben-gh' }, head: { ref: 'chore/join-ben' } }];
+  const r = await env.run(['join', '--handle', 'ben'], { login: 'ben-gh' });
+  apiRepo.openPrs = [];
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /Updated your open PR/);
+  const patch = calls.find(([m]) => m === 'PATCH');
+  assert.deepEqual([patch[1], patch[2]], ['repos/o/r/git/refs/heads/chore/join-ben', { sha: 'basesha', force: true }]);
+  const put = calls.find(([m]) => m === 'PUT')[2];
+  assert.equal(put.branch, 'chore/join-ben');
+  assert.deepEqual(JSON.parse(Buffer.from(put.content, 'base64').toString()).members.map((m) => m.handle), ['aalhad', 'chen', 'ben']);
+  assert.ok(!calls.some(([, p]) => p.endsWith('/pulls')), 'no duplicate PR');
+});
+
+test('join: someone else\'s open PR with the same branch name is not touched', async () => {
+  const env = makeEnv({ team: TEAM, writeTeam: false });
+  test.after(() => env.cleanup());
+  apiRepo.taken = true;
+  const calls = apiRepo(env, TEAM);
+  apiRepo.openPrs = [{ html_url: 'https://github.com/o/r/pull/3', user: { login: 'someone-else' }, head: { ref: 'chore/join-ben' } }];
+  const r = await env.run(['join', '--handle', 'ben'], { login: 'ben-gh' });
+  apiRepo.openPrs = [];
+  assert.equal(r.code, 0, r.err);
+  assert.ok(!calls.some(([m]) => m === 'PATCH'));
+  assert.ok(calls.some(([, p]) => p.endsWith('/pulls')));
 });

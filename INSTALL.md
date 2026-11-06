@@ -68,6 +68,15 @@ No push access? **ASK** the human to get write access (or have the owner add the
 
 ## Path B: set up IssueMesh in this repo (once per repo)
 
+First make sure nobody else is already doing it, since teammates may start in any order:
+
+```bash
+gh pr list --state open --search "issuemesh in:title"      # an open setup PR? wait for it to merge, then take Path A
+gh api repos/OWNER/REPO/contents/.github/workflows/issuemesh-referee.yml --silent && echo "referee already on the default branch"
+```
+
+`mesh init` never overwrites files that already exist (an owner's customized referee workflow, issue forms, a shortened `AGENTS.md` block are all kept; `--force` replaces them), so re-running it is safe, but two parallel setup PRs would still conflict.
+
 Needs admin or write access. Use the real GitHub logins of everyone on the team (**ASK** the human for the list; `handle:login` pairs):
 
 ```bash

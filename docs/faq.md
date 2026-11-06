@@ -68,6 +68,12 @@ The repo is probably a fork. GitHub turns Issues off on forks. A repo admin enab
 
 No, and please don't. `mesh` reads `.issuemesh/team.json` from the repo's **default branch** (cached for a few minutes), so every branch, old or new, sees the same team. Feature branches should carry only their own change. To change the team, open a PR to the default branch (`mesh join` does it for you). `mesh doctor` flags a leftover local copy, which is ignored. See [Branches and worktrees](concepts.md#branches-and-worktrees).
 
+## People join one by one, in any order. What if a referee or setup already exists?
+
+- `mesh join` only edits the member list (through a PR) and never touches workflows, forms or `AGENTS.md`, so it always respects an existing referee.
+- `mesh init` keeps every file that already exists (a customized referee workflow, for instance, including a commit pin); `--force` is the only way it replaces them. Agents are told to check for an open setup PR first and to join instead when IssueMesh is already set up.
+- Two join PRs open at once touch the same lines of `team.json`, so the second conflicts after the first merges. Re-run `mesh join`: it moves your open PR onto the latest default branch instead of opening a duplicate.
+
 ## All of us work on different feature branches of the same repo. Anything to watch?
 
 Branch from the up-to-date default branch (`mesh/<issue>-<slug>`, one per issue), open a draft PR early, and keep IssueMesh files off your branch. If one person runs several agents in one clone, give each branch its own `git worktree`. The claim on the issue, not the branch, is what stops two agents doing the same work.
