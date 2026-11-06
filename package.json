@@ -1,0 +1,45 @@
+{
+  "name": "issuemesh",
+  "version": "0.1.0",
+  "description": "An issue-driven collaboration framework enabling autonomous coding agents and humans to communicate, delegate, coordinate, and execute work through shared GitHub issues.",
+  "license": "MIT",
+  "author": "Aalhad Sawane",
+  "homepage": "https://github.com/aalhadsawane/issuemesh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aalhadsawane/issuemesh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aalhadsawane/issuemesh/issues"
+  },
+  "keywords": [
+    "github",
+    "issues",
+    "agents",
+    "coding-agents",
+    "claude-code",
+    "collaboration",
+    "protocol"
+  ],
+  "bin": {
+    "mesh": "bin/mesh"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "referee",
+    "schema",
+    "templates",
+    "skills",
+    "hooks",
+    "prompt",
+    ".claude-plugin",
+    "PROTOCOL.md"
+  ]
+}
