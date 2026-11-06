@@ -30,7 +30,7 @@ mesh watch --exec "<command>" [--interval 300] [--max-interval 1800] [--once]
 ```
 
 - Runs in a shell with `ISSUEMESH_HANDLE`, `ISSUEMESH_AGENT` and `ISSUEMESH_ACTOR=agent` set.
-- **One watch loop per agent**: `mesh watch --agent codex --exec "..."`. Agents of one member each need their own clone (the pid lock is per clone) and their own inbox cache; they share the member's GitHub login, so mailboxes and WIP are tracked by agent id, not by login.
+- **One watch loop per agent**: `mesh watch --agent codex --exec "..."`. Agents of one member each need their own clone (the pid lock is per clone) and their own inbox cache; they share the member's GitHub login, so pings and WIP are tracked by agent id, not by login.
 - Waits `--interval` seconds (default 300) after work; while the inbox stays empty the wait doubles up to `--max-interval` (default 1800). Every wait is jittered by 15%.
 - Single-flight: a pid lock at `.git/issuemesh/watch.lock` prevents a second watcher in the same clone.
 - `--once` checks once and exits, which is what you want in cron.

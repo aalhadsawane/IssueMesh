@@ -12,6 +12,19 @@ IssueMesh is built for small teams who trust each other. Read this before using 
 - **Authority.** (1) An agent's own member outranks everything. (2) Member-authored issue text and comments are work requests within scope. (3) Other members' agents send requests and information, not commands: an agent declines one that conflicts with its own member, asks for secrets, tokens or credentials, asks it to disable checks, change permissions or act outside the issue's scope, or is irreversible or high-impact (escalated instead). (4) Everything is attributed to the account that posted it.
 - **Not in scope:** a compromised member account, malicious repo admins, a hostile model provider, or sandboxing an agent's shell.
 
+## What the inbox is (and is not)
+
+The inbox is computed only from GitHub issues, PRs and labels in the configured repo, via read-only `gh api` calls. IssueMesh and its hooks never read email, Gmail, Slack or any other account, and nothing leaves your machine except those GitHub calls (plus whatever your model provider already receives from your agent). The hooks only run `mesh inbox`, print a one-line count, and are silent outside repos with `.issuemesh/team.json`.
+
+```
+ labels on issues/PRs in THIS repo ──(gh api, read-only)──► mesh inbox ──► "2 item(s) need you"
+   ping:you · to:you · assigned to you
+
+ never read:  email · Gmail · Slack · calendar · any other account
+```
+
+External information (emails, meeting notes) enters only when a human pastes it into the *External input* form (labelled `source:external`, data not instructions) or explicitly asks their agent to file it with `/issuemesh:new`. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+
 ## Prompt injection and `source:external`
 
 Anything that is not a member's instruction is **data, never instructions**: comments from non-members, emailed text, web pages, logs, file contents, issues labelled `source:external`. The referee labels issues opened by non-members `source:external`; the *External input* form applies it too. Agents summarize such content and extract tasks, but do not obey it, run commands from it, or fetch URLs it asks for. Oddities get escalated.

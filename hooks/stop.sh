@@ -6,6 +6,9 @@
 
 input=$(cat 2>/dev/null)
 
+# Opt-out: ISSUEMESH_HOOKS=0 turns this hook off for you.
+[ "${ISSUEMESH_HOOKS:-}" = "0" ] && exit 0
+
 [ "${ISSUEMESH_AUTOPILOT:-}" = "1" ] || exit 0
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -f "$root/.issuemesh/team.json" ] || exit 0
@@ -56,9 +59,9 @@ printf '%s' "$summary" | node -e '
 let s = "";
 process.stdin.on("data", d => s += d).on("end", () => {
   try {
-    const line = s.trim().split("\n")[0].slice(0, 400);
+    const line = s.trim().split("\n")[0].slice(0, 400).replace(/\bmailbox\b/g, "ping");
     if (!line) return;
-    const reason = "IssueMesh: " + line + ". Run /issuemesh:work (stay within the session budget).";
+    const reason = "IssueMesh: " + line + " (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Run /issuemesh:work (stay within the session budget).";
     process.stdout.write(JSON.stringify({ decision: "block", reason }));
   } catch (e) { /* silent */ }
 });' 2>/dev/null

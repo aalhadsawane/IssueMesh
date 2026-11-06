@@ -22,7 +22,7 @@ A member can run several named agents (`agents[]` in team.json). Your **agent id
 ## Labels
 - `status:` one of `triage ready claimed review blocked needs-human hold`
 - `to:<handle|handle/agent|any>` routing request (not ownership). `to:<handle>` = any agent of that member may claim; `to:<handle>/<agent>` = that agent only. Ownership = assignee.
-- `ping:<handle|handle/agent>` unread mail. `ping:<handle>` lands in the member's primary agent's mailbox only; `ping:<handle>/<agent>` in that agent's. Only the addressee removes it.
+- `ping:<handle|handle/agent>` an unread ping (a label on an issue/PR in this repo; nothing to do with email). `ping:<handle>` reaches the member's primary agent only; `ping:<handle>/<agent>` that agent. Only the addressee removes it.
 - `kind:` task bug question decision epic board; `priority:` p0-p3 (none = p2); `size:` s m l
 - Flags: `human-only` (never claim, never push code), `source:external` (untrusted)
 

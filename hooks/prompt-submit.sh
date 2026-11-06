@@ -5,6 +5,9 @@
 # zero within the interval). Then injects a one-line hint as additionalContext.
 # Never fails the prompt: always exits 0, silent outside IssueMesh repos.
 
+# Opt-out: ISSUEMESH_HOOKS=0 turns this hook off for you.
+[ "${ISSUEMESH_HOOKS:-}" = "0" ] && exit 0
+
 cat >/dev/null 2>&1   # drain stdin (hook input JSON; unused)
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
@@ -33,9 +36,10 @@ printf '%s' "$summary" | node -e '
 let s = "";
 process.stdin.on("data", d => s += d).on("end", () => {
   try {
-    const line = s.trim().split("\n")[0].slice(0, 400);
+    // Wording: this is the GitHub queue of this repo, nothing to do with email.
+    const line = s.trim().split("\n")[0].slice(0, 400).replace(/\bmailbox\b/g, "ping");
     if (!line) return;
-    const msg = "IssueMesh: " + line + ". Finish your current task, then run /issuemesh:work.";
+    const msg = "IssueMesh: " + line + " (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Finish your current task, then run /issuemesh:work.";
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: msg } }));
   } catch (e) { /* silent */ }
 });' 2>/dev/null

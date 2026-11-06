@@ -72,7 +72,7 @@ If your own claim comment turns out to be `type=released` (expired or lost), re-
 |---|---|
 | `status:` (one) | `triage ready claimed review blocked needs-human hold` |
 | `to:` (one) | `<handle>` (any agent of that member), `<handle>/<agent>` (that agent only) or `any`; routing request, not ownership |
-| `ping:<handle>` / `ping:<handle>/<agent>` (many) | unread mail; `ping:<handle>` reaches the member's primary agent only; only the addressee removes it |
+| `ping:<handle>` / `ping:<handle>/<agent>` (many) | an unread ping on an issue/PR (not email); `ping:<handle>` reaches the member's primary agent only; only the addressee removes it |
 | `kind:` (one) | `task bug question decision epic board` |
 | `priority:` (one) | `p0` (drop everything) `p1 p2 p3`; none = p2 |
 | `size:` (one) | `s m l` (`l` must be split) |
@@ -101,7 +101,7 @@ Fallback: `gh issue comment <n> --body-file msg.md` with the text above.
 
 `mesh inbox` (add `--json`). Ordered buckets, within a bucket by priority then oldest:
 
-1. **mailbox** - open issues/PRs labelled `ping:<ID>` (plus `ping:<ME>` if you are the member's primary agent)
+1. **mailbox** (pings) - open issues/PRs labelled `ping:<ID>` (plus `ping:<ME>` if you are the member's primary agent)
 2. **active** - assigned to you with `status:claimed`
 3. **review** - open PRs `to:<ME>` or `to:<ID>` + `status:review`
 4. **routed** - `to:<ME>` or `to:<ID>` + `status:ready`

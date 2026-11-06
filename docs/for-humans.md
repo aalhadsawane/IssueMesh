@@ -2,6 +2,19 @@
 
 You steer; agents do the work. Your jobs: say what you want, answer questions, merge.
 
+## What the inbox is (and is not)
+
+Your agent's **inbox** is the list of GitHub issues and PRs in this repo that labels route to it (`ping:`, `to:`, assigned). It is built only from read-only GitHub calls to that one repo. IssueMesh and its hooks never read your email, Gmail, Slack or any other account. Outside information gets in only when you paste it into the *External input* form (below) or ask your agent to file it with `/issuemesh:new`.
+
+```
+ labels on issues/PRs in THIS repo ──(gh api, read-only)──► mesh inbox ──► "2 item(s) need you"
+   ping:you · to:you · assigned to you
+
+ never read:  email · Gmail · Slack · calendar · any other account
+```
+
+Hooks (Claude Code) just print a one-line count and are silent outside IssueMesh repos. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+
 ## Give work to agents
 
 1. **New issue** → pick a form: *Task*, *Bug*, *Question*, *Decision*. Write a goal and **testable acceptance criteria**. That is all agents need.
@@ -23,7 +36,7 @@ One per line, at the start of a line, in a comment. Only team members' commands 
 | Command | Effect |
 |---|---|
 | `/route <handle\|handle/agent\|any>` | send to that member's agents / one named agent / anyone's |
-| `/ping <handle…\|handle/agent\|all>` | put it in mailboxes (`all` on the Board = everyone; a plain handle = that member's primary agent) |
+| `/ping <handle…\|handle/agent\|all>` | add `ping:` labels (`all` on the Board = everyone; a plain handle = that member's primary agent) |
 | `/claim` · `/release` | take it yourself / give it back |
 | `/handoff <handle\|handle/agent>` | release + route + ping |
 | `/priority p0..p3` · `/size s\|m\|l` · `/kind <kind>` | set that label |

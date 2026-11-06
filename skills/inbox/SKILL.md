@@ -8,7 +8,7 @@ allowed-tools: Bash, Read
 
 # /issuemesh:inbox
 
-Read-only. Do not claim, comment, label or ack anything.
+Read-only. Do not claim, comment, label or ack anything. The inbox is only the GitHub issues/PRs of this repo that labels route to you; it never involves email or other accounts.
 
 1. `mesh whoami` for handle, agent id, wip, live claim count, triager on duty (non-primary agent: add `--agent <name>`).
 2. `mesh inbox --json` (add `--limit 20`). Never run `mesh ack`, `mesh claim` or any write command here.

@@ -13,7 +13,7 @@ Follow the `issuemesh:protocol` skill for all rules. Arguments: `$ARGUMENTS`
 (an issue number = work only that issue; a number <= 10 with no `#` is the item budget).
 
 ## Session budget
-- Process at most **3 items** (override with the argument; PROTOCOL §9.6). An "item" is one issue or PR you take action on; reading and acking mail does not count. Prefer a short session per item over one long session: stale context is the main source of errors.
+- Process at most **3 items** (override with the argument; PROTOCOL §9.6). An "item" is one issue or PR you take action on; reading and acking pings does not count. Prefer a short session per item over one long session: stale context is the main source of errors.
 - Stop early when context is heavy, tests are failing in ways you cannot fix, or the inbox is empty.
 - Never hold more live claims than `wip` (see `mesh whoami`). Release what you will not finish this session.
 
@@ -21,7 +21,7 @@ Follow the `issuemesh:protocol` skill for all rules. Arguments: `$ARGUMENTS`
 1. `git fetch origin` and make sure the working tree is clean. Stash or stop if it is not yours.
 2. `mesh whoami` (handle, agent id, wip, triager on duty). Running as a non-primary agent of your member: pass `--agent <name>` (or set `ISSUEMESH_AGENT`) on every `mesh` call. `mesh sweep` if the team has no referee (`mesh doctor` shows it).
 3. `mesh inbox --json`. If empty: do step 9 and stop. Work buckets in order; skip anything that fails a precondition and say why in your final summary.
-4. **Mailbox** (`ping:<my agent id>`; a plain `ping:<handle>` reaches only the member's primary agent): read the issue and newest comments. If it is a `type=ask`, answer with `mesh post <n> --type answer --re <comment-id> --body ...` (this pings the asker; only if you actually know; otherwise `mesh route`/`mesh ping` the right member). Then `mesh ack <n>`. If it needs real work, treat it as routed work below. Nothing to say = just `mesh ack <n>`.
+4. **Pings (mailbox bucket)** (`ping:<my agent id>`; a plain `ping:<handle>` reaches only the member's primary agent): read the issue and newest comments. If it is a `type=ask`, answer with `mesh post <n> --type answer --re <comment-id> --body ...` (this pings the asker; only if you actually know; otherwise `mesh route`/`mesh ping` the right member). Then `mesh ack <n>`. If it needs real work, treat it as routed work below. Nothing to say = just `mesh ack <n>`.
 5. **Active work** (assigned to me, `status:claimed`): resume the highest priority first. `mesh heartbeat <n>`. Read the status comment (it is your memory), `git checkout mesh/<n>-<slug>`, continue the plan. If `mesh heartbeat`/`mesh status` exits 3 or your claim comment shows `type=released` (expired or lost), do NOT continue from memory: re-read the issue and status comment, then `mesh claim <n>` again; if it fails, move on. Tick only with a receipt: `mesh status <n> --check "<item> - <command> -> <output excerpt> / commit <sha>"`. Finish before starting new work. Counts as one item.
 6. **Reviews** (PRs `to:<me>`, `status:review`): run the `issuemesh:review` procedure. Never review a PR authored by your own member.
 7. **Routed / market / triage duty**: for each candidate, in inbox order:

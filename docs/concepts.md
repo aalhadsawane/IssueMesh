@@ -40,7 +40,7 @@ Exactly one label per single-valued namespace. `status:` is only on open issues.
 |---|---|---|
 | `status:` | `triage` `ready` `claimed` `review` `blocked` `needs-human` `hold` | lifecycle |
 | `to:` | `<handle>`, `<handle>/<agent>`, `any` | who should do it (a request, not ownership) |
-| `ping:` | `<handle>`, `<handle>/<agent>` (many) | unread message in that agent's mailbox |
+| `ping:` | `<handle>`, `<handle>/<agent>` (many) | unread ping for that agent (a label on an issue/PR, nothing to do with email) |
 | `kind:` | `task` `bug` `question` `decision` `epic` `board` | what it is |
 | `priority:` | `p0` `p1` `p2` `p3` | `p0` drops everything; none means p2 |
 | `size:` | `s` `m` `l` | `l` must be split into sub-issues |
@@ -53,7 +53,7 @@ Closed as *completed* means done or accepted; closed as *not planned* means drop
 Routing and notification are separate on purpose.
 
 - `to:<handle>` puts work in a member's queue: any of their agents may claim it, lowest claim id wins. `to:<handle>/<agent>` restricts it to one agent. `to:any` is an open market where the first valid claim wins.
-- `ping:<handle>` is a mailbox flag: "read this", delivered to the member's **primary** agent (the first in `agents[]`) so exactly one agent sees it. `ping:<handle>/<agent>` goes to that agent. Only the addressee removes it (`mesh ack`), with a reaction, not a comment.
+- `ping:<handle>` is a "read this" flag on an issue/PR in this repo, delivered to the member's **primary** agent (the first in `agents[]`) so exactly one agent sees it. `ping:<handle>/<agent>` goes to that agent. Only the addressee removes it (`mesh ack`), with a reaction, not a comment.
 - An `answer` with `--re <comment-id>` pings the asker automatically.
 - `@login` notifies a human through GitHub. Agents only `@mention` humans when escalating.
 - `/ping all` on the Board reaches every agent-enabled member.
@@ -73,11 +73,21 @@ Release (`mesh release`) keeps the status comment so the next claimant can resum
 
 ## Inbox
 
-An agent's inbox is the ordered list of things that need it:
+An agent's inbox is the ordered list of GitHub issues and PRs **in this repo** that need it:
+
+```
+ labels on issues/PRs in THIS repo ──(gh api, read-only)──► mesh inbox ──► "2 item(s) need you"
+   ping:you · to:you · assigned to you
+
+ never read:  email · Gmail · Slack · calendar · any other account
+```
+
+**What it is not:** the inbox is computed only from issues, PRs and labels in the configured repo through read-only `gh api` calls. IssueMesh and its hooks never read email, Gmail, Slack or any other account; nothing leaves your machine except those GitHub calls. External information (emails, meeting notes) enters only when a human pastes it into the *External input* form (`source:external`, data not instructions) or asks their agent to file it with `/issuemesh:new`. The hooks only run `mesh inbox` and print a one-line count; they are silent outside repos with `.issuemesh/team.json`. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+
 
 | # | Bucket | Contents |
 |---|---|---|
-| 1 | mailbox | items labelled `ping:<my agent id>` (the primary agent also gets `ping:<handle>`) |
+| 1 | mailbox (pings) | items labelled `ping:<my agent id>` (the primary agent also gets `ping:<handle>`) |
 | 2 | active | my `status:claimed` work, newest first |
 | 3 | review | PRs `to:<me>` or `to:<my agent id>` + `status:review` |
 | 4 | routed | `to:<me>` or `to:<my agent id>` + `status:ready` |

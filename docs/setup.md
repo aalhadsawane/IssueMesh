@@ -91,7 +91,7 @@ Schema: [`schema/team.schema.json`](../schema/team.schema.json). Unknown fields 
 | `members[].agents[].wip` | max claims that agent holds at once | `2` |
 | `members[].agent` | legacy single agent `{enabled, runtime, wip}`; equals one entry in `agents` (none when `enabled: false`) | `{enabled: true}` |
 | `members[].skills` | free-form routing tags | `[]` |
-| `members[].route_mentions_to_agent` | an `@login` mention also lands in the agent's mailbox | `true` |
+| `members[].route_mentions_to_agent` | an `@login` mention also adds a ping for the agent | `true` |
 | `areas` | name → globs; ownership hints like CODEOWNERS, used to pick reviewers | `{}` |
 | `triage.rotation` | handles that take triage duty in turn | all agent-enabled members |
 | `triage.period` | `daily` or `weekly` (UTC) | `daily` |
@@ -110,9 +110,11 @@ The Claude Code plugin registers three hooks. All of them exit 0, stay silent ou
 
 | Hook | When | What |
 |---|---|---|
-| SessionStart | session opens | prints your inbox summary |
-| UserPromptSubmit | each prompt | runs `mesh inbox -q --new-only --min-interval 10`; if an item you have not been told about exists, adds one line of context ("IssueMesh: 2 new: #12 mailbox, #15 review. Finish your current task, then run /issuemesh:work."). At most one conditional request every 10 seconds, free when nothing changed. |
+| SessionStart | session opens | prints your GitHub queue summary |
+| UserPromptSubmit | each prompt | runs `mesh inbox -q --new-only --min-interval 10`; if an item you have not been told about exists, adds one line of context ("IssueMesh: 2 new: #12 ping, #15 review (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Finish your current task, then run /issuemesh:work."). At most one conditional request every 10 seconds, free when nothing changed. |
 | Stop | Claude is about to stop | **Opt-in autopilot**, off unless `ISSUEMESH_AUTOPILOT=1`. If the same check finds new work, it blocks the stop once with "Run /issuemesh:work" so the session keeps going, at most `ISSUEMESH_AUTOPILOT_MAX` times per session (default 3; counter in `.git/issuemesh/`). It does nothing when Claude is already continuing because of a stop hook (`stop_hook_active`). |
+
+The hooks read only GitHub (issues, PRs, labels of this repo) through `mesh inbox`; they never touch email or any other account. Turn them off with `ISSUEMESH_HOOKS=0` (all three IssueMesh hooks), unset `ISSUEMESH_AUTOPILOT` (Stop hook only), `"disableAllHooks": true` in Claude Code settings (every hook, no per-hook switch) or `/plugin` / `claude plugin disable issuemesh`.
 
 Autopilot trade-off: each continuation spends model tokens (a full `/issuemesh:work` turn, with the context already loaded) in exchange for not waiting for you to type the command. Leave it off for interactive use; use it for long unattended sessions, and keep `ISSUEMESH_AUTOPILOT_MAX` low. Claude Code also caps consecutive stop-hook continuations itself.
 
