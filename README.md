@@ -12,6 +12,44 @@ Built for **small teams of 2 to 10**: student projects, hackathons, early startu
 dashboard to host: GitHub is the shared state. Zero dependencies (Node 18+ and `gh`). Works with Claude Code
 as a first-class plugin, and with Codex, Cursor, Aider or Copilot through a portable prompt and the `mesh` CLI.
 
+## Install
+
+**Tell your agent** (Claude Code, Codex, Cursor, Aider, ...), in your team's repo or anywhere:
+
+> Install the app in the repo `aalhadsawane/IssueMesh` and use it for `https://github.com/OWNER/REPO`
+
+The agent follows [INSTALL.md](INSTALL.md): installs the `mesh` CLI (plus the plugin for Claude Code), clones your team repo and adds you to the team (`mesh join`, shared as a PR). Needs [Node 18+](https://nodejs.org) and [`gh`](https://cli.github.com) logged in (`gh auth login`).
+
+**Or by hand**, three commands:
+
+```bash
+npm i -g github:aalhadsawane/issuemesh#v1                  # the mesh CLI (any agent)
+claude plugin marketplace add aalhadsawane/issuemesh        # Claude Code plugin (optional)
+claude plugin install issuemesh@issuemesh
+```
+
+Inside Claude Code the plugin commands are `/plugin marketplace add aalhadsawane/issuemesh` and `/plugin install issuemesh@issuemesh`.
+
+### Join a team that already uses IssueMesh
+
+```bash
+gh repo clone OWNER/REPO && cd REPO
+mesh join          # adds you to .issuemesh/team.json; then commit it on a branch and open a PR
+mesh doctor && mesh whoami
+```
+
+Then run your agent: `/issuemesh:work` in Claude Code, or tell any agent "follow `.issuemesh/ISSUEMESH.md`" (saved by INSTALL.md step 2).
+
+### Start IssueMesh in a new repo (team owner, once)
+
+```bash
+cd your-repo
+mesh init --member aalhad:aalhadsawane --member ben:ben-github
+git add .issuemesh .github AGENTS.md CLAUDE.md && git commit -m "chore: add IssueMesh" && git push
+```
+
+`mesh init` writes `.issuemesh/team.json`, issue forms, a PR template, the referee workflow and an `AGENTS.md`/`CLAUDE.md` block, then creates the labels and the pinned Board. Teammates install as above and run `mesh join`. The referee workflow needs Actions enabled with read and write permission (Settings → Actions → General); it follows the `v1` line of this repo, pin a commit SHA in `ref:` to freeze it ([docs/setup.md](docs/setup.md#upgrading)). Prefer a guided setup? In Claude Code run `/issuemesh:setup`.
+
 ```
  you / teammate / client email
               │  write an issue (or paste the email into the "External input" form)
@@ -72,28 +110,6 @@ The Claude Code hooks only run `mesh inbox` (and `mesh whoami`), print a short s
 
 The **Board** is one pinned issue for standups and broadcasts that belong to no task.
 
-## Quickstart
-
-Prerequisites: [Node 18+](https://nodejs.org), [`gh`](https://cli.github.com) authenticated (`gh auth login`), a GitHub repo (private recommended).
-
-1. **Install** (each member). Claude Code plugin:
-   ```
-   /plugin marketplace add aalhadsawane/issuemesh
-   /plugin install issuemesh@issuemesh
-   ```
-   Or just the CLI, for any other agent: `npm i -g github:aalhadsawane/issuemesh`
-2. **Scaffold** (team owner, once, in your repo):
-   ```bash
-   mesh init --member aalhad:aalhadsawane --member ben:ben-github --member chen:chen-github
-   ```
-   This writes `.issuemesh/team.json`, issue forms, a PR template, an `AGENTS.md`/`CLAUDE.md` block, the label set and the pinned Board.
-3. **Referee** (recommended, zero-cost GitHub Action): `mesh init` already copied `.github/workflows/issuemesh-referee.yml`. It runs slash commands, arbitrates claims and expires dead leases. The workflow checks out the referee code from the `v1` tag of `aalhadsawane/issuemesh`, so it follows the v1 line; pin a commit SHA in `ref:` to freeze it (see [docs/setup.md](docs/setup.md#upgrading)). In the repo's Settings → Actions → General, allow Actions and give workflows read and write permission.
-4. **Commit and push** `.issuemesh/`, `.github/` and `AGENTS.md`. Then `mesh doctor` should be green.
-5. **Each member** installs per step 1, clones the repo, and runs `mesh doctor`.
-6. **Run your agent.** Interactively: `/issuemesh:work` (Claude Code) or save the portable prompt once (`curl -fsSL https://raw.githubusercontent.com/aalhadsawane/issuemesh/v1/prompt/ISSUEMESH.md -o .issuemesh/ISSUEMESH.md`) and tell your agent "follow .issuemesh/ISSUEMESH.md". Hands-off: `mesh watch --exec "claude -p '/issuemesh:work'"`.
-
-Full walkthrough: [docs/setup.md](docs/setup.md). Prefer to be guided? In Claude Code run `/issuemesh:setup`.
-
 ## A day in the mesh
 
 Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (backend), Eli (docs). Each has an agent.
@@ -117,7 +133,7 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 - **Lazy-consensus decisions** with a mandatory steelman and a critique from another member's agent.
 - **Triage rotation**, WIP limits, `human-only` and `/hold` stop switches, a loop guard that stops agent-to-agent echo chambers, and `size:l` auto-split rule.
 - **Optional referee Action**: slash commands, label hygiene, claim arbitration, lease sweep, Board rotation, optional wake of CI-hosted agents.
-- **A real CLI**: `mesh inbox | claim | status | release | handoff | post | ping | route | escalate | board | standup | watch | doctor | ...` (`mesh help`).
+- **A real CLI**: `mesh join | inbox | claim | status | release | handoff | post | ping | route | escalate | board | standup | watch | doctor | ...` (`mesh help`).
 - **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and hooks that show your GitHub queue at session start and flag new work on your next prompt (opt-in autopilot on Stop).
 - **Agent-agnostic**: the protocol is plain GitHub; [prompt/ISSUEMESH.md](prompt/ISSUEMESH.md) is a self-contained prompt with raw `gh` fallbacks for every step.
 
