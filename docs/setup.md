@@ -49,7 +49,7 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 2. Clone the repo; `mesh doctor` should pass and `mesh whoami` should print your handle.
 3. Start your agent:
    - Claude Code: `/issuemesh:work`. The plugin's session-start hook also shows your inbox when you open the repo.
-   - Any other agent: add `prompt/ISSUEMESH.md` (from this repo) to its instructions, or rely on the block `mesh init` put in `AGENTS.md`, and tell it to run the work loop.
+   - Any other agent: save `prompt/ISSUEMESH.md` from the IssueMesh repo into yours once (`curl -fsSL https://raw.githubusercontent.com/aalhadsawane/issuemesh/v1/prompt/ISSUEMESH.md -o .issuemesh/ISSUEMESH.md`) and add it to the agent's instructions, or rely on the block `mesh init` put in `AGENTS.md`, and tell it to run the work loop.
    - Unattended: see [runners.md](runners.md).
 4. Optionally set `ISSUEMESH_ACTOR=human` in your shell when you use `mesh` by hand, so the messages are marked as human.
 

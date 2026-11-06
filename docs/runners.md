@@ -15,7 +15,7 @@ You type the work command in your agent when you sit down or between tasks.
 | Agent | How |
 |---|---|
 | Claude Code | `/issuemesh:work` (plugin). The session-start hook already prints your inbox. Also `/issuemesh:inbox` (read-only), `/issuemesh:triage`, `/issuemesh:review`, `/issuemesh:standup` |
-| Codex, Cursor, Aider, Copilot | Put `prompt/ISSUEMESH.md` in the agent's instructions (or rely on the `AGENTS.md` block from `mesh init`) and say: "Run the IssueMesh work loop." |
+| Codex, Cursor, Aider, Copilot | Put the portable prompt in the agent's instructions (save `prompt/ISSUEMESH.md` from the IssueMesh repo as `.issuemesh/ISSUEMESH.md` in yours; see [setup.md](setup.md)), or rely on the `AGENTS.md` block from `mesh init`, and say: "Run the IssueMesh work loop." |
 
 A session processes at most 3 items, leaves every claim with a fresh status comment, then stops. Start a new session for more.
 
@@ -39,10 +39,10 @@ Examples:
 mesh watch --exec "claude -p '/issuemesh:work'"
 
 # Codex CLI
-mesh watch --exec "codex exec 'Follow prompt/ISSUEMESH.md and run the work loop.'"
+mesh watch --exec "codex exec 'Follow .issuemesh/ISSUEMESH.md and run the work loop.'"
 
 # Any agent that takes a prompt file or text (Aider shown)
-mesh watch --exec "aider --yes --message-file prompt/ISSUEMESH.md"
+mesh watch --exec "aider --yes --message-file .issuemesh/ISSUEMESH.md"
 ```
 
 Flags differ between versions of these tools and between permission modes: check your agent's `--help`, and give the headless run only the permissions it needs (see [security.md](security.md)). An agent run unattended needs a pre-approved allowlist for `mesh`, `gh`, `git` and your test commands.

@@ -72,10 +72,10 @@ Prerequisites: [Node 18+](https://nodejs.org), [`gh`](https://cli.github.com) au
    mesh init --member aalhad:aalhadsawane --member ben:ben-github --member chen:chen-github
    ```
    This writes `.issuemesh/team.json`, issue forms, a PR template, an `AGENTS.md`/`CLAUDE.md` block, the label set and the pinned Board.
-3. **Add the referee** (recommended, zero-cost GitHub Action): `mesh init` already copied `.github/workflows/issuemesh-referee.yml`. It runs slash commands, arbitrates claims and expires dead leases.
+3. **Referee** (recommended, zero-cost GitHub Action): `mesh init` already copied `.github/workflows/issuemesh-referee.yml`. It runs slash commands, arbitrates claims and expires dead leases. The workflow checks out the referee code from the `v1` tag of `aalhadsawane/issuemesh`, so it follows the v1 line; pin a commit SHA in `ref:` to freeze it (see [docs/setup.md](docs/setup.md#upgrading)). In the repo's Settings → Actions → General, allow Actions and give workflows read and write permission.
 4. **Commit and push** `.issuemesh/`, `.github/` and `AGENTS.md`. Then `mesh doctor` should be green.
 5. **Each member** installs per step 1, clones the repo, and runs `mesh doctor`.
-6. **Run your agent.** Interactively: `/issuemesh:work` (Claude Code) or tell your agent "follow prompt/ISSUEMESH.md". Hands-off: `mesh watch --exec "claude -p '/issuemesh:work'"`.
+6. **Run your agent.** Interactively: `/issuemesh:work` (Claude Code) or save the portable prompt once (`curl -fsSL https://raw.githubusercontent.com/aalhadsawane/issuemesh/v1/prompt/ISSUEMESH.md -o .issuemesh/ISSUEMESH.md`) and tell your agent "follow .issuemesh/ISSUEMESH.md". Hands-off: `mesh watch --exec "claude -p '/issuemesh:work'"`.
 
 Full walkthrough: [docs/setup.md](docs/setup.md). Prefer to be guided? In Claude Code run `/issuemesh:setup`.
 

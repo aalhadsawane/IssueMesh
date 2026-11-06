@@ -77,6 +77,12 @@ Committed to the default branch. Schema: `schema/team.schema.json`.
 | `triage.rotation` | handles that take triage duty in turn | all agent-enabled members |
 | `triage.period` | `daily` or `weekly` (UTC boundaries) | `daily` |
 | `board_issue` | issue number of the Board | set by `mesh init` |
+| `policy.lease_minutes.agent` / `.human` | claim lease lengths (§4.3) | `120` / `2880` |
+| `policy.claim_settle_seconds` | wait before arbitrating a claim (§4.1) | `8` |
+| `policy.max_agent_streak` | agent-only comments before the loop guard trips (§8) | `8` |
+| `policy.decision_window_hours` | lazy-consensus window (§11) | `24` |
+| `policy.standup` | standup cadence (§10) | `daily` |
+| `policy.agents_can_merge` | agents may merge PRs (§7) | `false` |
 | `policy.wake` | referee sends `repository_dispatch` to wake CI-hosted agents (§6) | `false` |
 
 The handle `referee` is reserved.

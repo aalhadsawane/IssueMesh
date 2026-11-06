@@ -1,6 +1,6 @@
 'use strict';
 
-/** Board lookup and rotation (PROTOCOL.md section 9). */
+/** Board lookup and rotation (PROTOCOL.md section 10). */
 
 const { Plan } = require('../plan');
 const { refereeMessage } = require('../util');

@@ -15,7 +15,7 @@ installed and authenticated with write access, Node >= 18. This changes shared s
 
 1. `mesh doctor`. Note what is already in place; do not redo it.
 2. **Team**: if `.issuemesh/team.json` is missing, collect members (`handle:github-login`, from `$ARGUMENTS` or ask the user). Handles match `^[a-z0-9][a-z0-9-]{0,19}$`, unique, not `referee`. Ask who is on triage rotation and whether any member has no agent (`agent.enabled: false`). Do not guess logins.
-3. Run `mesh init --member aalhad:aalhadsawane --member ben:ben-github ...` (one `--member` per person). Add `--all` to also create labels, templates, Board and AGENTS.md/CLAUDE.md blocks. Never pass `--force` unless the user approves overwriting.
+3. Run `mesh init --member aalhad:aalhadsawane --member ben:ben-github ...` (one `--member` per person). With no step flags it does everything: `team.json`, templates and the AGENTS.md/CLAUDE.md block, labels and the pinned Board. Never pass `--force` unless the user approves overwriting.
 4. Verify: `mesh labels sync`, then `mesh doctor` must pass. Fix what it reports (usually: gh auth, missing labels, `board_issue`).
 5. Optional referee (recommended, no secrets needed): confirm `.github/workflows/issuemesh-referee.yml` exists; if not, tell the user to copy it from the IssueMesh repo `templates/.github/workflows/` (or `mesh init --templates`). Explain it enforces claims, slash commands and lease expiry; without it agents enforce the rules themselves (`mesh sweep`).
 6. Optional CI agent runner: describe `templates/.github/workflows/issuemesh-agent.yml`, mark it advanced; do not install it unless asked. It needs per-member secrets, which you never create.
