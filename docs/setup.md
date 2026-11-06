@@ -100,7 +100,7 @@ Schema: [`schema/team.schema.json`](../schema/team.schema.json). Unknown fields 
 
 Most teams do not need this; interactive sessions and `mesh watch` are simpler ([runners.md](runners.md)). To run an agent unattended on GitHub Actions:
 
-1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, issue}`) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this (it ships that way; use `contents: read` if you keep wake off).
+1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, issue}`) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this; it ships with `contents: read`, so change that line when you turn wake on.
 2. Each member who wants a CI agent runs `mesh init --with-agent-runner`, copies `.github/workflows/issuemesh-agent.yml` to `issuemesh-agent-<handle>.yml`, and replaces `HANDLE` (lowercase in the `if:`/`--as`/concurrency group, uppercase in secret names).
 3. Each such member adds two repository secrets: `ANTHROPIC_API_KEY_<HANDLE>` and `ISSUEMESH_TOKEN_<HANDLE>`, a fine-grained personal access token **of that member** with read/write on Issues, Pull requests and Contents for this repo. Never share one token between members.
 

@@ -24,11 +24,10 @@ on:
 permissions:
   issues: write
   pull-requests: write
-  # `contents: write` is needed ONLY for waking CI-hosted agents: the referee
+  # Least privilege by default. If you enable "policy": {"wake": true} in
+  # .issuemesh/team.json, change this to `contents: write`: the referee then
   # calls repos.createDispatchEvent (repository_dispatch), which requires it.
-  # Enabled by "policy": {"wake": true} in .issuemesh/team.json. If you keep
-  # wake off (the default), change this to `contents: read`.
-  contents: write
+  contents: read
 
 # One run per issue/PR at a time, in arrival order (never cancel a half-applied run).
 concurrency:
