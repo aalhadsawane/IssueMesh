@@ -47,6 +47,8 @@ Without a global npm install: `git clone --depth 1 --branch v1 https://github.co
 
 ```bash
 gh repo clone OWNER/REPO && cd REPO      # skip if you are already inside it
+# no write access to OWNER/REPO? work from your own fork instead: gh repo fork OWNER/REPO --clone && cd REPO
+# (origin = your fork, upstream = the team repo; mesh finds the team repo by itself)
 gh repo view --json hasIssuesEnabled -q .hasIssuesEnabled     # must print true
 test -f .issuemesh/team.json && echo "uses IssueMesh" || echo "does not use IssueMesh yet"
 ```

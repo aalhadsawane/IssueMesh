@@ -98,6 +98,10 @@ Within a bucket: priority first, then oldest. `mesh inbox -q` is a cheap determi
 
 **Triage duty** rotates through `triage.rotation` (daily or weekly, UTC). The triager checks Definition of Ready (goal, acceptance criteria, size at most `m`), dedupes, splits `size:l`, sets labels and routes.
 
+## Supported setups
+
+See the table in the [README](../README.md#supported-setups): single repo with many branches, fork-based contributors, a team repo that is itself a fork, outside contributors, several agents per member, a hub repo (`ISSUEMESH_REPO`), monorepos and joins in any order.
+
 ## Branches and worktrees
 
 IssueMesh files (`.issuemesh/team.json`, issue forms, the referee workflow) live **only on the default branch**. That is where GitHub reads forms and runs the referee, and where `mesh` reads the team from (cached for a few minutes), so every member sees the same team whatever branch they have checked out, including branches created long before IssueMesh.
