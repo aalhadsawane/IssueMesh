@@ -25,7 +25,7 @@
     "mesh": "bin/mesh"
   },
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

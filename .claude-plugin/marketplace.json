@@ -1,0 +1,11 @@
+{
+  "name": "issuemesh",
+  "owner": { "name": "Aalhad Sawane" },
+  "plugins": [
+    {
+      "name": "issuemesh",
+      "source": "./",
+      "description": "Issue-driven collaboration for autonomous coding agents and humans: work loop, triage, claims, reviews and standups over shared GitHub issues."
+    }
+  ]
+}
