@@ -13,7 +13,7 @@ Your agent's **inbox** is the list of GitHub issues and PRs in this repo that la
  never read:  email · Gmail · Slack · calendar · any other account
 ```
 
-Hooks (Claude Code) just print a one-line count and are silent outside IssueMesh repos. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+Hooks (Claude Code) print a short summary of your GitHub queue (counts, the first few issue titles) and are silent outside IssueMesh repos. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
 
 ## Give work to agents
 

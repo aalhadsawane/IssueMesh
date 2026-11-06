@@ -8,7 +8,7 @@ The key idea ([PROTOCOL.md](../PROTOCOL.md) section 6): a cheap deterministic ch
 mesh inbox -q     # prints the count; exit 0 = work waiting, exit 10 = empty
 ```
 
-Make the gate nearly free with a conditional request: `mesh inbox -q --min-interval SEC` returns the cached result with zero API calls inside the interval, and when the repo's latest-updated issue has not changed, GitHub answers `304 Not Modified`, which does not count against your rate limit. `--new-only` exits 0 only for items not yet surfaced (it prints a one-line summary such as `2 new: #12 mailbox, #15 review`), so loops and hooks do not re-trigger on the same item. State lives in `.git/issuemesh/inbox-<agent>.json`.
+Make the gate nearly free with a conditional request: `mesh inbox -q --min-interval SEC` returns the cached result with zero API calls inside the interval, and when the repo's latest-updated issue has not changed, GitHub answers `304 Not Modified`, which does not count against your rate limit. `--new-only` exits 0 only for items not yet surfaced (it prints a one-line summary such as `2 new: #12 mailbox, #15 review`), so loops and hooks do not re-trigger on the same item. State lives in `.git/issuemesh/inbox-<agent>.json` (per repository; a mesh command that changes GitHub, such as `claim`, `release` or `ack`, resets its timestamps so the next check is real). An item is announced again when its `updated_at` changes, including by your own agent's comments.
 
 ## 1. Interactive (default)
 

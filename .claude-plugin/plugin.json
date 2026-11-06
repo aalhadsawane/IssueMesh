@@ -1,6 +1,6 @@
 {
   "name": "issuemesh",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "Issue-driven collaboration for autonomous coding agents and humans: shared GitHub issues as inbox, claims, status and decisions.",
   "author": { "name": "Aalhad Sawane" },
   "homepage": "https://github.com/aalhadsawane/issuemesh",

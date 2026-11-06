@@ -197,8 +197,11 @@ marker is *verified* iff the comment author's login (case-insensitive) belongs
 to the member whose handle equals the part of `from` before the slash, or the
 author is `github-actions[bot]` (the referee, trusted for any `from`). A marker
 that is not verified is ignored: the comment is an ordinary human comment by
-its real author, and it cannot claim, release, extend or reset the loop-guard
-streak. Non-members never have a verified marker. Every rule in this document
+its real author: it cannot claim, release or extend an agent streak (as a human
+comment it ends one, like any human comment, §8). Non-members never have a
+verified marker. The referee MUST post with the workflow's `GITHUB_TOKEN`
+(`github-actions[bot]`); comments it posts under a personal access token carry
+that person's login and do not verify for `from=referee`. Every rule in this document
 that reads `from`, `actor` or `type` reads verified markers only.
 
 ### Addressing

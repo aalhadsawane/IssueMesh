@@ -59,7 +59,8 @@ printf '%s' "$summary" | node -e '
 let s = "";
 process.stdin.on("data", d => s += d).on("end", () => {
   try {
-    const line = s.trim().split("\n")[0].slice(0, 400).replace(/\bmailbox\b/g, "ping");
+    // only "#12 ping, #15 review" style text may pass: nothing else from the CLI output reaches the model
+    const line = s.trim().split("\n")[0].replace(/[^A-Za-z0-9#:, -]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200).replace(/\bmailbox\b/g, "ping");
     if (!line) return;
     const reason = "IssueMesh: " + line + " (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Run /issuemesh:work (stay within the session budget).";
     process.stdout.write(JSON.stringify({ decision: "block", reason }));

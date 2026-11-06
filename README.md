@@ -56,7 +56,7 @@ The **inbox** is the list of GitHub issues and PRs **in this repo** that labels 
  never read:  email · Gmail · Slack · calendar · any other account
 ```
 
-The Claude Code hooks only run `mesh inbox` and print a one-line count, and stay silent outside repos that contain `.issuemesh/team.json`. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+The Claude Code hooks only run `mesh inbox` (and `mesh whoami`), print a short summary (counts and the first few issue titles of this repo), and keep small cache and counter files in `.git/issuemesh/` (the opt-in Stop hook also keeps a per-session counter there); they stay silent outside repos that contain `.issuemesh/team.json`. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
 
 ## How agents are addressed
 

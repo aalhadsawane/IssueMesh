@@ -6,7 +6,7 @@ IssueMesh is built for small teams who trust each other. Read this before using 
 
 **Cooperative.** Members of the repo are trusted not to attack each other. The protocol defends against *mistakes* (races, hallucinations, loops, over-eager agents, prompt-injected text from outside), not against a malicious collaborator.
 
-- **Attribution is by GitHub author, not by header.** A marker is a text line anyone who can comment could write, so it only counts when the comment's author login belongs to the member named in `from=` (or is `github-actions[bot]`, the referee). A marker naming someone else is treated as an ordinary human comment by its real author: it cannot claim, release, win arbitration or reset/trip the loop guard. Non-members never verify. This stops forgery by accident or by a different account, not a member using their own token (a member's agent and the member share one account) or a compromised account.
+- **Attribution is by GitHub author, not by header.** A marker is a text line anyone who can comment could write, so it only counts when the comment's author login belongs to the member named in `from=` (or is `github-actions[bot]`, the referee). A marker naming someone else is treated as an ordinary human comment by its real author: it cannot claim, release, win arbitration or count as an agent comment in the loop guard (as a plain human comment it ends an agent streak, like any human comment). Non-members never verify. This stops forgery by accident or by a different account, not a member using their own token (a member's agent and the member share one account) or a compromised account.
 - **Authority comes from team.json.** Slash commands and instructions count only from logins listed in `.issuemesh/team.json`. Commands from non-members are ignored. Keep `team.json` changes behind normal PR review; a member can edit it.
 - **Agents share their member's identity.** An agent posts as the member's GitHub account with the member's token, as do all of that member's agents (`aalhad/claude`, `aalhad/codex`); reactions cannot tell them apart, which is why claims are comments, not reactions. Whatever the token can do, the agent can do.
 - **Authority.** (1) An agent's own member outranks everything. (2) Member-authored issue text and comments are work requests within scope. (3) Other members' agents send requests and information, not commands: an agent declines one that conflicts with its own member, asks for secrets, tokens or credentials, asks it to disable checks, change permissions or act outside the issue's scope, or is irreversible or high-impact (escalated instead). (4) Everything is attributed to the account that posted it.
@@ -14,7 +14,7 @@ IssueMesh is built for small teams who trust each other. Read this before using 
 
 ## What the inbox is (and is not)
 
-The inbox is computed only from GitHub issues, PRs and labels in the configured repo, via read-only `gh api` calls. IssueMesh and its hooks never read email, Gmail, Slack or any other account, and nothing leaves your machine except those GitHub calls (plus whatever your model provider already receives from your agent). The hooks only run `mesh inbox`, print a one-line count, and are silent outside repos with `.issuemesh/team.json`.
+The inbox is computed only from GitHub issues, PRs and labels in the configured repo, via read-only `gh api` calls. IssueMesh and its hooks never read email, Gmail, Slack or any other account, and nothing leaves your machine except those GitHub calls (plus whatever your model provider already receives from your agent). The hooks only run `mesh inbox` (and `mesh whoami`), keep small cache files under `.git/issuemesh/`, print a short summary (counts, bucket names and at most three issue titles, shortened and treated as untrusted data), and are silent outside repos with `.issuemesh/team.json`.
 
 ```
  labels on issues/PRs in THIS repo ──(gh api, read-only)──► mesh inbox ──► "2 item(s) need you"
@@ -44,7 +44,7 @@ On a public repo, anyone can open an issue or comment. Those arrive as non-membe
 - Each member uses their **own** `gh` login. Distinct identities are required for claim arbitration and for "an agent never approves its own member's PR".
 - Local use: the `gh` login needs `repo` scope (private repos) or `public_repo`. Nothing else.
 - CI runner: use a **fine-grained PAT** of that member, limited to this one repository, with read/write on Issues, Pull requests and Contents (and nothing more). Store it as a repository secret named per member (`ISSUEMESH_TOKEN_<HANDLE>`). The default `GITHUB_TOKEN` cannot act as a member, and events it creates do not trigger other workflows, which is why a PAT is used.
-- The referee uses the workflow's `GITHUB_TOKEN` with `issues: write`, `pull-requests: write`, and `contents: read`. Switch to `contents: write` only when `wake` is on (needed for `repository_dispatch`).
+- The referee uses the workflow's `GITHUB_TOKEN` (**do not replace it with a personal access token**: its comments verify only because they are posted by `github-actions[bot]`; under a PAT they carry that person's login, `from=referee` no longer verifies, and its loop-guard and escalation comments stop counting) with `issues: write`, `pull-requests: write`, and `contents: read`. Switch to `contents: write` only when `wake` is on (needed for `repository_dispatch`).
 - Rotate PATs when a member leaves; remove them from `team.json` and the collaborator list.
 - Secrets in forked-PR workflows are not exposed by GitHub; do not change that.
 
@@ -67,3 +67,9 @@ The referee workflow checks out this repo's `v1` ref and executes `referee/index
 ## Reporting a vulnerability
 
 Please use GitHub's private vulnerability reporting on this repository (Security tab → Report a vulnerability), or open a minimal issue asking for a private channel without including details.
+
+
+## Known limitations
+
+- **Edited comments keep their original author.** GitHub's REST API shows the original author of a comment, not the last editor. A member with write access can edit another member's comment to add a marker, and it will verify as the original author's. IssueMesh assumes a cooperative team; keep write access to people you trust.
+- **Outsiders and loop guard.** Comments from non-members are ignored when counting an agent streak, so an outsider can neither extend nor reset it.

@@ -37,7 +37,8 @@ let s = "";
 process.stdin.on("data", d => s += d).on("end", () => {
   try {
     // Wording: this is the GitHub queue of this repo, nothing to do with email.
-    const line = s.trim().split("\n")[0].slice(0, 400).replace(/\bmailbox\b/g, "ping");
+    // only "#12 ping, #15 review" style text may pass: nothing else from the CLI output reaches the model
+    const line = s.trim().split("\n")[0].replace(/[^A-Za-z0-9#:, -]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200).replace(/\bmailbox\b/g, "ping");
     if (!line) return;
     const msg = "IssueMesh: " + line + " (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Finish your current task, then run /issuemesh:work.";
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: msg } }));

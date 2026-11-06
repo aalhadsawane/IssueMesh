@@ -18,8 +18,8 @@
 #     per agent: also pass `--agent <name>` to the `mesh` call below, set
 #     `ISSUEMESH_AGENT: <name>` under env, and (optional) narrow the `if:` with
 #     `&& (!github.event.client_payload.agent || github.event.client_payload.agent == '<name>')`.
-#     The wake payload is {handle, agent?, issue}; agent is set only for
-#     `ping:<handle>/<agent>`.
+#     The wake payload is {handle, agent?, issue}; agent is set for
+#     `to:`/`ping:<handle>/<agent>` and for `ping:<handle>` (primary agent).
 #   - The job first runs `mesh inbox -q` (cheap, no LLM). The expensive agent
 #     step only runs if the inbox is non-empty (exit 0 = work, 10 = empty).
 #

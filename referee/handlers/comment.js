@@ -135,7 +135,7 @@ module.exports = async function onComment({ payload, config, now, api }) {
     }
     for (const loser of losers) {
       const lm = byId.get(loser.commentId);
-      if (P.parseMarker(lm.body)) {
+      if (P.verifyComment(lm, config).marker) {
         plan.updateComment(lm.id, P.replaceMarker(lm.body, { type: 'released', reason: 'lost-race' }));
       } else if (loser.commentId === comment.id) {
         plan.comment(refereeMessage('note', `@${loser.login} your \`/claim\` lost the race to ${winner.agentId} (earlier claim comment). Nothing to do.`, { re: String(loser.commentId) }));

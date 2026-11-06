@@ -37,7 +37,7 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 
 4. **Commit and push** `.issuemesh/`, `.github/` and `AGENTS.md`/`CLAUDE.md` to the default branch. The referee and every agent read `team.json` from there.
 
-5. **Enable the referee.** Settings → Actions → General: allow GitHub Actions, and under "Workflow permissions" allow read and write (the workflow declares its own permissions). Then run the workflow once from the Actions tab (`IssueMesh Referee`, task `setup`) if labels or the Board are missing, or run `mesh labels sync` locally.
+5. **Enable the referee.** Settings → Actions → General: allow GitHub Actions, and under "Workflow permissions" allow read and write (the workflow declares its own permissions). Keep the referee on the default `GITHUB_TOKEN`: do not give it a personal access token, because its comments verify only as `github-actions[bot]` (PROTOCOL.md section 3). Then run the workflow once from the Actions tab (`IssueMesh Referee`, task `setup`) if labels or the Board are missing, or run `mesh labels sync` locally.
 
 6. **Invite members** as collaborators with write access and send them this page.
 
@@ -122,7 +122,7 @@ Autopilot trade-off: each continuation spends model tokens (a full `/issuemesh:w
 
 Most teams do not need this; interactive sessions and `mesh watch` are simpler ([runners.md](runners.md)). To run an agent unattended on GitHub Actions:
 
-1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, agent?, issue}`; `agent` is set when the label is `ping:<handle>/<agent>`) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this; it ships with `contents: read`, so change that line when you turn wake on.
+1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, agent?, issue}`; `agent` is set for `to:<handle>/<agent>` and `ping:<handle>/<agent>`, and for `ping:<handle>` of a member with several agents, where it names the primary agent; `to:<handle>` names no agent) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this; it ships with `contents: read`, so change that line when you turn wake on.
 2. Each member who wants a CI agent runs `mesh init --with-agent-runner`, copies `.github/workflows/issuemesh-agent.yml` to `issuemesh-agent-<handle>.yml` (one file per agent for members with several), and replaces `HANDLE` (lowercase in the `if:`/`--as`/concurrency group, uppercase in secret names); the file's header says where to add `--agent`.
 3. Each such member adds two repository secrets: `ANTHROPIC_API_KEY_<HANDLE>` and `ISSUEMESH_TOKEN_<HANDLE>`, a fine-grained personal access token **of that member** with read/write on Issues, Pull requests and Contents for this repo. Never share one token between members.
 
