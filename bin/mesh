@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+'use strict';
+
+// Thin launcher. Resolves symlinks so it works from npm's bin dir and from a
+// plugin bin/ directory on PATH.
+const fs = require('fs');
+const path = require('path');
+
+if (Number(process.versions.node.split('.')[0]) < 18) {
+  console.error('mesh: Node >= 18 is required (found ' + process.versions.node + ')');
+  process.exit(1);
+}
+
+const here = path.dirname(fs.realpathSync(__filename));
+const { main } = require(path.join(here, '..', 'lib', 'cli', 'main.js'));
+
+main(process.argv.slice(2)).then(
+  (code) => { process.exitCode = code; },
+  (e) => { console.error((e && e.stack) || e); process.exitCode = 1; }
+);
