@@ -38,6 +38,13 @@ class FakeGitHub {
 
   /** Simulated `gh api -i -H 'If-None-Match: ...'` (200 with an ETag, or 304 when unchanged). */
   async conditional(rawPath, etag) {
+    if (/\/contents\//.test(rawPath)) { // team.json lookups: served by the transport, ETag from the content
+      this.contentsLog = this.contentsLog || [];
+      this.contentsLog.push({ path: rawPath, etag });
+      const data = await this.transport('GET', rawPath);
+      const tag = `W/"c${require('crypto').createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 8)}"`;
+      return etag === tag ? { status: 304, etag: tag, data: null } : { status: 200, etag: tag, data };
+    }
     this.conditionalLog.push({ path: rawPath, etag });
     if (this.conditionalFails) throw new HttpError(500, 'conditional requests unavailable');
     const cur = `W/"v${this.version}"`;

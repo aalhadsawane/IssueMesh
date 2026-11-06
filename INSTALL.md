@@ -58,23 +58,20 @@ test -f .issuemesh/team.json && echo "uses IssueMesh" || echo "does not use Issu
 ## Path A: join an existing team
 
 ```bash
-mesh join --dry-run          # shows the entry; handle comes from the human's GitHub login
+mesh join --dry-run          # shows what will happen (handle comes from the human's GitHub login)
 mesh join                    # --handle <short-name>, --agents claude,codex to customize
-git switch -c chore/join-<handle>
-git add .issuemesh/team.json
-git commit -m "chore(issuemesh): add <handle> to the team"
-git push -u origin chore/join-<handle>
-gh pr create --fill
 ```
 
-`mesh join` only edits `.issuemesh/team.json`; the PR lets the owner review it. If you cannot push, **ASK** the human to get write access (or to have the owner add them). Then go to step 4.
+`mesh join` adds the human to `.issuemesh/team.json` on the **default branch** by opening a pull request from a new branch it creates through the GitHub API. It never touches your checkout or current branch, so it is safe to run from any branch or worktree. The owner merges the PR; then you are on the team.
+
+No push access? **ASK** the human to get write access (or have the owner add them). Never copy `team.json` onto other branches: `mesh` reads it from the default branch. Then go to step 4.
 
 ## Path B: set up IssueMesh in this repo (once per repo)
 
 Needs admin or write access. Use the real GitHub logins of everyone on the team (**ASK** the human for the list; `handle:login` pairs):
 
 ```bash
-git switch -c chore/issuemesh-setup
+git fetch origin && git switch -c chore/issuemesh-setup origin/HEAD     # branch from the default branch
 mesh init --member alice:alice-gh --member bob:bob-gh      # include the human you work for
 git add .issuemesh .github; for f in AGENTS.md CLAUDE.md; do [ -f "$f" ] && git add "$f"; done
 git commit -m "chore(issuemesh): set up IssueMesh"
@@ -97,7 +94,7 @@ mesh whoami      # your handle, agent, triage duty, claims
 mesh inbox       # what needs you now
 ```
 
-`mesh` reads `.issuemesh/team.json` from the checkout, or from the default branch on GitHub when your branch has none.
+`mesh` reads `.issuemesh/team.json` from the **default branch** on GitHub (cached for a few minutes), whatever branch you have checked out. Work on a feature branch as usual: IssueMesh files belong on the default branch only.
 
 ## 5. Use it
 

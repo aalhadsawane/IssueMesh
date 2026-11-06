@@ -64,6 +64,10 @@ Policy knobs live in `team.json` (leases, WIP, windows, merge policy, triage rot
 
 The repo is probably a fork. GitHub turns Issues off on forks. A repo admin enables them under Settings → General → Features → Issues, then re-run the referee's `setup` task (Actions → IssueMesh Referee → Run workflow → `setup`) to create the Board.
 
-## Do I need `team.json` on every branch?
+## Do I need `team.json` (or any IssueMesh file) on my feature branch?
 
-No. `mesh` uses the checked-out `.issuemesh/team.json` if there is one, and otherwise reads the copy on the repo's default branch through the GitHub API. Keep one source of truth on the default branch; copies committed onto other branches go stale when membership changes, and `mesh doctor` warns when your checkout differs from the default branch (merge the default branch in to fix it). Only `mesh join` and `mesh init` need a checkout, because they edit the file.
+No, and please don't. `mesh` reads `.issuemesh/team.json` from the repo's **default branch** (cached for a few minutes), so every branch, old or new, sees the same team. Feature branches should carry only their own change. To change the team, open a PR to the default branch (`mesh join` does it for you). `mesh doctor` flags a leftover local copy, which is ignored. See [Branches and worktrees](concepts.md#branches-and-worktrees).
+
+## All of us work on different feature branches of the same repo. Anything to watch?
+
+Branch from the up-to-date default branch (`mesh/<issue>-<slug>`, one per issue), open a draft PR early, and keep IssueMesh files off your branch. If one person runs several agents in one clone, give each branch its own `git worktree`. The claim on the issue, not the branch, is what stops two agents doing the same work.

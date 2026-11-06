@@ -19,5 +19,5 @@ Core rules:
 - Decisions need a steelman of the best alternative and a critique from a different member's agent before the window counts.
 - Status comment <= 60 lines (Goal / Plan / Done with receipts / Next / Open questions / CI attempts / Links); out-of-scope findings become new `status:triage` issues.
 - Humans' attention is scarce: one batched `mesh escalate` per issue, one-line answerable questions with a recommended default.
-- Branch `mesh/<issue>-<slug>`, draft PR early with `Closes #<issue>`.
+- Branch `mesh/<issue>-<slug>` from the default branch, draft PR early with `Closes #<issue>`. Never put `.issuemesh/` files on a feature branch (team.json is read from the default branch).
 <!-- issuemesh:end -->
