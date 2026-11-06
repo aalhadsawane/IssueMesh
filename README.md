@@ -38,19 +38,34 @@ as a first-class plugin, and with Codex, Cursor, Aider or Copilot through a port
 Give five people five coding agents and the same repo, and the failure modes show up fast:
 
 - **Duplicated work.** Two agents quietly build the same feature. IssueMesh has claims with leases and a deterministic race rule.
-- **No way to address a teammate's agent.** You cannot `@` a process. IssueMesh has `to:` routing and a per-agent mailbox.
+- **No way to address a teammate's agent.** You cannot `@` a process. IssueMesh has `to:` routing and per-agent `ping:` labels.
 - **Notification spam.** Agents that `@mention` and comment "on it!" bury the humans. Agents here use reactions, edit one status comment per task, and only `@mention` a person when they truly need one.
 - **Agents agreeing with each other.** Models tend to flip to whoever spoke last, and grade their own work generously. IssueMesh requires receipts, an independent fresh-eyes review by a different member's agent, and a steelmanned dissent before decisions pass.
 - **Lost context.** Agents start every session with no memory and get worse as context grows. The status comment on each issue is the shared memory; sessions are short and bounded.
 
 The rules borrow what already works (Scrum and Kanban cadence, XP pairing and small batches, Lean WIP limits, Prow-style slash commands, lazy consensus, leases) and cut it for agents, who never tire or forget between days but do forget between sessions. Human attention is treated as the scarce resource. The reasoning is in [docs/design.md](docs/design.md), the evidence in [docs/research.md](docs/research.md).
 
+## What the inbox is (and is not)
+
+The **inbox** is the list of GitHub issues and PRs **in this repo** that labels route to you (`ping:`, `to:`, assigned). `mesh inbox` computes it with read-only `gh api` calls to that one repo. IssueMesh and its hooks never read email, Gmail, Slack or any other account, and nothing leaves your machine except those GitHub calls. Outside information (an email, meeting notes) enters only when a human pastes it into the *External input* form (labelled `source:external`, treated as data) or asks their agent to file it with `/issuemesh:new`.
+
+```
+ labels on issues/PRs in THIS repo ──(gh api, read-only)──► mesh inbox ──► "2 item(s) need you"
+   ping:you · to:you · assigned to you
+
+ never read:  email · Gmail · Slack · calendar · any other account
+```
+
+The Claude Code hooks only run `mesh inbox` (and `mesh whoami`), print a short summary (counts and the first few issue titles of this repo), and keep small cache and counter files in `.git/issuemesh/` (the opt-in Stop hook also keeps a per-session counter there); they stay silent outside repos that contain `.issuemesh/team.json`. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
+
 ## How agents are addressed
 
 | You want… | Do this | Effect |
 |---|---|---|
-| a member's **agent** to do something | label `to:<handle>` (or `/route <handle>`) | goes into their work queue |
-| a member's **agent** to read something | `/ping <handle>` or label `ping:<handle>` | goes into their mailbox |
+| a member's **agent** to do something | label `to:<handle>` (or `/route <handle>`) | any of that member's agents may claim it |
+| one **specific agent** of a member | label `to:<handle>/<agent>` (e.g. `to:aalhad/codex`) | only that agent may claim it |
+| a member's **agent** to read something | `/ping <handle>` or label `ping:<handle>` | their primary agent's pings |
+| one **specific agent** to read something | label `ping:<handle>/<agent>` | that agent's pings |
 | a **human** to look | `@login` | GitHub notification (agents only do this when escalating) |
 | **anyone's** agent | label `to:any` | open market, first valid claim wins |
 | **everyone** | comment `/ping all` on the **Board** | pings every agent-enabled member |
@@ -93,15 +108,17 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 
 ## Features
 
+- **Several agents per member**: a member can run named agents (`aalhad/claude`, `aalhad/codex`) with their own pings, WIP and runtime; reviews can go to the agent with a different runtime.
+- **Attribution by GitHub author**: a marker only counts if the account that posted it is the member it names, so a forged `from=` cannot claim, release or silence the loop guard. Other members' agents send requests, not commands ([docs/security.md](docs/security.md)).
 - **Claims with leases**: an issue has at most one live owner; expired claims return to the pool automatically. Races resolve by lowest comment id, with no coordinator.
-- **Inbox, not firehose**: six ranked buckets (mailbox, active work, reviews, routed, triage duty, open market). Agents are only woken, and only pay for LLM tokens, when the inbox is non-empty.
+- **Inbox, not firehose**: six ranked buckets (pings, active work, reviews, routed, triage duty, open market). Agents are only woken, and only pay for LLM tokens, when the inbox is non-empty; the check is a conditional (ETag) request that costs no rate limit when nothing changed.
 - **Status comment as memory**: one living comment per claim (plan, checklist with receipts, next step) that any fresh session can resume from.
 - **Receipts and fresh-eyes review**: "done" needs evidence; reviewers judge independently, prefer a different agent runtime, and must name weaknesses or what they checked.
 - **Lazy-consensus decisions** with a mandatory steelman and a critique from another member's agent.
 - **Triage rotation**, WIP limits, `human-only` and `/hold` stop switches, a loop guard that stops agent-to-agent echo chambers, and `size:l` auto-split rule.
 - **Optional referee Action**: slash commands, label hygiene, claim arbitration, lease sweep, Board rotation, optional wake of CI-hosted agents.
 - **A real CLI**: `mesh inbox | claim | status | release | handoff | post | ping | route | escalate | board | standup | watch | doctor | ...` (`mesh help`).
-- **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and a session-start hook that shows your inbox.
+- **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and hooks that show your GitHub queue at session start and flag new work on your next prompt (opt-in autopilot on Stop).
 - **Agent-agnostic**: the protocol is plain GitHub; [prompt/ISSUEMESH.md](prompt/ISSUEMESH.md) is a self-contained prompt with raw `gh` fallbacks for every step.
 
 ## What IssueMesh is not

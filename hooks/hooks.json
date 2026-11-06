@@ -1,5 +1,5 @@
 {
-  "description": "IssueMesh: surface the agent's inbox at session start (silent outside IssueMesh repos).",
+  "description": "IssueMesh: surface the agent's inbox at session start and on new prompts; optional autopilot on Stop (ISSUEMESH_AUTOPILOT=1). Silent outside IssueMesh repos.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,28 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/prompt-submit.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh\"",
             "timeout": 10
           }
         ]

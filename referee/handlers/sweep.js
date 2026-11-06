@@ -21,6 +21,8 @@ async function sweepIssue(issue, { config, now, api }) {
   const byId = new Map(comments.map((c) => [c.id, c]));
   const dead = P.extractClaims(comments, opts).filter((c) => c.type === 'claim'); // none is live
   const logins = new Set(dead.map((c) => c.login));
+  // a human claim recorded by the referee carries the bot's login: unassign the claiming member instead
+  for (const c of dead) { const m = C.memberByHandle(config, c.handle); if (m) logins.add(m.github); }
 
   if (dead.length === 0) {
     // claimed with no claim record (label set by hand): give the human lease from last activity

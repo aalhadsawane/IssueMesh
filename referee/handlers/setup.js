@@ -6,7 +6,7 @@ const P = require('../../lib/protocol');
 const { findBoard, createBoardActions } = require('./board');
 
 module.exports = async function setup({ api, config }) {
-  const actions = [{ type: 'syncLabels', labels: P.standardLabels(config.members.map((m) => m.handle)) }];
+  const actions = [{ type: 'syncLabels', labels: P.standardLabels(config.members) }];
   const board = await findBoard(api, config);
   if (board) {
     actions.push({ type: 'log', level: 'info', message: `Board exists: #${board.number}` });

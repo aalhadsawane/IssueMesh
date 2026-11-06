@@ -291,3 +291,142 @@ test('loadConfig does not search above the git root', () => {
     fs.rmSync(outer, { recursive: true, force: true });
   }
 });
+
+/* ------------------------------------------------- multiple agents (F1) --- */
+
+const multi = () => ({
+  version: 1,
+  members: [
+    { handle: 'aalhad', github: 'aalhadsawane', agents: [{ name: 'claude', runtime: 'claude-code', wip: 2 }, { name: 'codex', runtime: 'codex', wip: 1 }] },
+    { handle: 'bob', github: 'bob-gh', agent: { runtime: 'codex', wip: 3 } },
+    { handle: 'chen', github: 'chen-gh', agent: { enabled: false } },
+    { handle: 'dev', github: 'dev-gh' },
+    { handle: 'eli', github: 'eli-gh', agents: [] },
+  ],
+});
+
+test('normalizeConfig: agents array is kept, defaulted per agent, and primary first', () => {
+  const raw = multi();
+  raw.members[0].agents[0] = { name: 'claude' };
+  const n = C.normalizeConfig(raw);
+  assert.deepEqual(n.members[0].agents, [
+    { name: 'claude', runtime: 'claude-code', wip: 2 },
+    { name: 'codex', runtime: 'codex', wip: 1 },
+  ]);
+  assert.deepEqual(n.members[0].agent, { enabled: true, runtime: 'claude-code', wip: 2 }); // derived view of the primary
+});
+
+test('normalizeConfig: legacy agent becomes a one-element agents array (name derived from runtime)', () => {
+  const n = C.normalizeConfig(multi());
+  assert.deepEqual(n.members[1].agents, [{ name: 'codex', runtime: 'codex', wip: 3 }]);
+  assert.deepEqual(n.members[3].agents, [{ name: 'claude', runtime: 'claude-code', wip: 2 }]);
+  assert.deepEqual(n.members[2].agents, []); // enabled: false
+  assert.deepEqual(n.members[4].agents, []); // explicit empty array
+  assert.equal(n.members[4].agent.enabled, false);
+  assert.ok(n.members.every((m) => Array.isArray(m.agents)));
+});
+
+test('normalizeConfig: agents wins over the legacy agent object', () => {
+  const raw = multi();
+  raw.members[0].agent = { enabled: false, runtime: 'cursor', wip: 9 };
+  const n = C.normalizeConfig(raw);
+  assert.equal(n.members[0].agents.length, 2);
+  assert.deepEqual(n.members[0].agent, { enabled: true, runtime: 'claude-code', wip: 2 });
+});
+
+test('normalizeConfig: default triage rotation is every member with an agent', () => {
+  assert.deepEqual(C.normalizeConfig(multi()).triage.rotation, ['aalhad', 'bob', 'dev']);
+});
+
+test('legacyAgentName: runtime-derived names fall back to "main"', () => {
+  assert.equal(C.legacyAgentName('claude-code'), 'claude');
+  assert.equal(C.legacyAgentName('codex'), 'codex');
+  assert.equal(C.legacyAgentName('Cursor Agent'), 'cursor-agent');
+  assert.equal(C.legacyAgentName(''), 'main');
+  assert.equal(C.legacyAgentName('***'), 'main');
+});
+
+test('validateConfig: agents shape, names, uniqueness, wip', () => {
+  assert.equal(C.validateConfig(multi()).ok, true);
+  assert.match(multiErrors((c) => { c.members[0].agents = 'x'; }, multi), /agents: must be an array/);
+  assert.match(multiErrors((c) => { c.members[0].agents = [7]; }, multi), /agents\[0\]: must be an object/);
+  assert.match(multiErrors((c) => { c.members[0].agents = [{ runtime: 'x' }]; }, multi), /agents\[0\]\.name/);
+  assert.match(multiErrors((c) => { c.members[0].agents[0].name = 'Claude'; }, multi), /agents\[0\]\.name/);
+  assert.match(multiErrors((c) => { c.members[0].agents[0].name = 'a/b'; }, multi), /agents\[0\]\.name/);
+  assert.match(multiErrors((c) => { c.members[0].agents[1].name = 'claude'; }, multi), /duplicate agent name "claude"/);
+  assert.match(multiErrors((c) => { c.members[0].agents[0].wip = 0; }, multi), /agents\[0\]\.wip/);
+  assert.match(multiErrors((c) => { c.members[0].agents[0].runtime = 5; }, multi), /agents\[0\]\.runtime/);
+  // same name under different members is fine
+  const ok = multi();
+  ok.members[1].agents = [{ name: 'claude' }];
+  assert.equal(C.validateConfig(ok).ok, true);
+});
+
+function multiErrors(mutate, base) {
+  const raw = base();
+  mutate(raw);
+  return C.validateConfig(raw).errors.join('\n');
+}
+
+test('agentsOf / hasAgent / primaryAgent work on raw and normalized members', () => {
+  const raw = multi();
+  assert.deepEqual(C.agentsOf(raw.members[1]).map((a) => a.name), ['codex']);
+  assert.deepEqual(C.agentsOf(raw.members[2]), []);
+  assert.deepEqual(C.agentsOf(null), []);
+  assert.equal(C.hasAgent(raw.members[3]), true);
+  assert.equal(C.hasAgent(raw.members[4]), false);
+  assert.equal(C.primaryAgent(raw.members[0]).name, 'claude');
+  assert.equal(C.primaryAgent(raw.members[4]), null);
+});
+
+test('agentId is canonical: slash form only for members with several agents', () => {
+  const n = C.normalizeConfig(multi());
+  assert.equal(C.agentId(n.members[0], 'codex'), 'aalhad/codex');
+  assert.equal(C.agentId(n.members[0], n.members[0].agents[0]), 'aalhad/claude');
+  assert.equal(C.agentId(n.members[1], 'codex'), 'bob');
+  assert.equal(C.agentId(n.members[2], null), 'chen');
+});
+
+test('parseAgentId and resolveAgent', () => {
+  assert.deepEqual(C.parseAgentId('Aalhad/Claude'), { handle: 'aalhad', agent: 'claude' });
+  assert.deepEqual(C.parseAgentId('aalhad'), { handle: 'aalhad', agent: null });
+  for (const bad of ['', 'a/b/c', '/x', 'a/', 'A B', 'a/b c']) assert.equal(C.parseAgentId(bad), null, bad);
+
+  const n = C.normalizeConfig(multi());
+  let r = C.resolveAgent(n, 'aalhad');
+  assert.deepEqual([r.id, r.address, r.explicit, r.agent.name], ['aalhad/claude', 'aalhad', false, 'claude']);
+  r = C.resolveAgent(n, 'aalhad/codex');
+  assert.deepEqual([r.id, r.address, r.explicit, r.agent.name], ['aalhad/codex', 'aalhad/codex', true, 'codex']);
+  r = C.resolveAgent(n, 'bob/codex'); // sole agent: canonical id collapses to the handle
+  assert.deepEqual([r.id, r.address], ['bob', 'bob']);
+  assert.equal(C.resolveAgent(n, 'bob/claude'), null);
+  assert.equal(C.resolveAgent(n, 'nobody'), null);
+  assert.equal(C.resolveAgent(n, 'aalhad/ghost'), null);
+  r = C.resolveAgent(n, 'chen');
+  assert.deepEqual([r.agent, r.id], [null, 'chen']);
+  assert.equal(C.resolveAgent(n, 'chen/claude'), null);
+});
+
+test('triagerOnDuty default rotation counts members with agents (raw config)', () => {
+  const raw = multi();
+  const seen = new Set();
+  for (let d = 0; d < 6; d++) seen.add(C.triagerOnDuty(raw, new Date(Date.UTC(2026, 10, 1 + d))));
+  assert.deepEqual([...seen].sort(), ['aalhad', 'bob', 'dev']);
+});
+
+test('the shipped template team.json validates and shows two agents for aalhad', () => {
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'templates', '.issuemesh', 'team.json'), 'utf8'));
+  assert.equal(C.validateConfig(raw).ok, true);
+  const n = C.normalizeConfig(raw);
+  assert.deepEqual(n.members[0].agents.map((a) => a.name), ['claude', 'codex']);
+  assert.ok(n.members.slice(1).every((m) => m.agents.length === 1));
+});
+
+test('the JSON schema allows agents and the legacy agent object', () => {
+  const schema = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'schema', 'team.schema.json'), 'utf8'));
+  const props = schema.properties.members.items.properties;
+  assert.equal(props.agents.type, 'array');
+  assert.deepEqual(props.agents.items.required, ['name']);
+  assert.equal(props.agents.items.properties.name.pattern, '^[a-z0-9][a-z0-9-]{0,19}$');
+  assert.equal(props.agent.type, 'object');
+});

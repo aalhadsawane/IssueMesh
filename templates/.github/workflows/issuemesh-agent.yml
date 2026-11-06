@@ -8,12 +8,18 @@
 # How it works
 #   - The referee (issuemesh-referee.yml, with `"wake": true` in
 #     .issuemesh/team.json policy) sends a repository_dispatch event
-#     `issuemesh-wake` with payload {handle, issue} when a to:/ping: label is
+#     `issuemesh-wake` with payload {handle, agent?, issue} when a to:/ping: label is
 #     added for an agent-enabled member.
 #   - Each member who wants a CI agent copies this file ONCE, renames it
 #     (e.g. issuemesh-agent-ben.yml) and replaces every HANDLE below with
 #     their handle from .issuemesh/team.json (lowercase, e.g. ben), and HANDLE
 #     in secret names with the uppercase form (BEN).
+#   - A member with several agents (agents[] in team.json) copies this file once
+#     per agent: also pass `--agent <name>` to the `mesh` call below, set
+#     `ISSUEMESH_AGENT: <name>` under env, and (optional) narrow the `if:` with
+#     `&& (!github.event.client_payload.agent || github.event.client_payload.agent == '<name>')`.
+#     The wake payload is {handle, agent?, issue}; agent is set for
+#     `to:`/`ping:<handle>/<agent>` and for `ping:<handle>` (primary agent).
 #   - The job first runs `mesh inbox -q` (cheap, no LLM). The expensive agent
 #     step only runs if the inbox is non-empty (exit 0 = work, 10 = empty).
 #

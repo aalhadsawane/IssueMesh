@@ -5,13 +5,15 @@
  *
  * created: slash commands, mentions -> ping labels, claim arbitration, loop guard.
  * edited:  claim arbitration only (heartbeat edits must not replay commands).
- * Comments from non-members and bots are ignored.
+ * Comments from non-members and bots are ignored. A marker only counts when its
+ * `from` matches the comment's GitHub author (PROTOCOL.md section 3); otherwise
+ * the comment is an ordinary human comment by that author.
  */
 
 const P = require('../../lib/protocol');
 const C = require('../../lib/config');
 const { Plan } = require('../plan');
-const { claimOpts, agentMembers, resolveMember, refereeMessage, releaseClaims } = require('../util');
+const { claimOpts, agentMembers, resolveTarget, refereeMessage, releaseClaims } = require('../util');
 
 /** Statuses a fresh claim may move to `claimed`. */
 const CLAIMABLE = [null, 'triage', 'ready', 'claimed'];
@@ -25,7 +27,8 @@ module.exports = async function onComment({ payload, config, now, api }) {
   if (!member) return [];
 
   const created = payload.action !== 'edited';
-  const marker = P.parseMarker(comment.body);
+  const verified = P.verifyComment(comment, config);
+  const marker = verified.marker;
   const commands = created ? P.parseCommands(comment.body) : [];
   const isClaim = marker ? marker.type === 'claim' : P.parseCommands(comment.body).some((c) => c.name === 'claim');
   if (!created && !isClaim) return [];
@@ -35,7 +38,7 @@ module.exports = async function onComment({ payload, config, now, api }) {
   const byId = new Map(comments.map((c) => [c.id, c]));
   const plan = new Plan(issue.number, labels, (issue.assignees || []).map((a) => a.login));
   const opts = claimOpts(config, now);
-  const asHuman = P.actorOf(comment.body) === 'human';
+  const asHuman = verified.actor === 'human';
 
   const releaseMine = (reason) => {
     const mine = P.liveClaims(comments, opts).filter((c) => c.handle === member.handle || c.login.toLowerCase() === author.login.toLowerCase());
@@ -60,25 +63,25 @@ module.exports = async function onComment({ payload, config, now, api }) {
       case 'release': releaseMine('released'); break;
       case 'route': {
         const target = (args[0] || '').toLowerCase();
-        const m = target === 'any' ? null : resolveMember(config, target);
-        if (target !== 'any' && !m) { plan.log(`/route: unknown handle "${target}"`); break; }
-        plan.setNs('to', m ? m.handle : 'any');
+        const t = target === 'any' ? null : resolveTarget(config, target);
+        if (target !== 'any' && !t) { plan.log(`/route: unknown handle "${target}"`); break; }
+        plan.setNs('to', t ? t.address : 'any');
         if (st === 'triage') plan.setNs('status', 'ready');
         break;
       }
       case 'ping': {
-        const targets = args.some((a) => a.toLowerCase() === 'all')
-          ? agentMembers(config).filter((m) => m.handle !== member.handle)
-          : args.map((a) => resolveMember(config, a)).filter((m) => m && agentMembers(config).includes(m));
-        for (const m of targets) plan.addLabel(P.pingLabel(m.handle));
+        const addresses = args.some((a) => a.toLowerCase() === 'all')
+          ? agentMembers(config).filter((m) => m.handle !== member.handle).map((m) => m.handle)
+          : args.map((a) => resolveTarget(config, a)).filter((t) => t && t.agent).map((t) => t.address);
+        for (const a of addresses) plan.addLabel(P.pingLabel(a));
         break;
       }
       case 'handoff': {
-        const m = resolveMember(config, args[0]);
-        if (!m) { plan.log(`/handoff: unknown handle "${args[0]}"`); break; }
+        const t = resolveTarget(config, args[0]);
+        if (!t) { plan.log(`/handoff: unknown handle "${args[0]}"`); break; }
         releaseMine('handoff');
-        plan.setNs('to', m.handle);
-        if (agentMembers(config).includes(m)) plan.addLabel(P.pingLabel(m.handle));
+        plan.setNs('to', t.address);
+        if (t.agent) plan.addLabel(P.pingLabel(t.address));
         break;
       }
       case 'block': {
@@ -119,7 +122,7 @@ module.exports = async function onComment({ payload, config, now, api }) {
     for (const login of P.parseMentions(comment.body)) {
       const m = C.memberByLogin(config, login);
       if (!m || m.handle === member.handle || m.route_mentions_to_agent === false) continue;
-      if (agentMembers(config).includes(m)) plan.addLabel(P.pingLabel(m.handle));
+      if (C.hasAgent(m)) plan.addLabel(P.pingLabel(m.handle)); // member-level: lands in the primary agent's mailbox
     }
   }
 
@@ -132,19 +135,19 @@ module.exports = async function onComment({ payload, config, now, api }) {
     }
     for (const loser of losers) {
       const lm = byId.get(loser.commentId);
-      if (P.parseMarker(lm.body)) {
+      if (P.verifyComment(lm, config).marker) {
         plan.updateComment(lm.id, P.replaceMarker(lm.body, { type: 'released', reason: 'lost-race' }));
       } else if (loser.commentId === comment.id) {
-        plan.comment(refereeMessage('note', `@${loser.login} your \`/claim\` lost the race to ${winner.handle} (earlier claim comment). Nothing to do.`, { re: String(loser.commentId) }));
+        plan.comment(refereeMessage('note', `@${loser.login} your \`/claim\` lost the race to ${winner.agentId} (earlier claim comment). Nothing to do.`, { re: String(loser.commentId) }));
       }
       if (winner && loser.login.toLowerCase() !== winner.login.toLowerCase()) plan.unassign([loser.login]);
     }
   }
 
   /* ---- loop guard (PROTOCOL.md section 8) ---- */
-  if (created && P.loopGuardTripped(comments, config.policy.max_agent_streak) && plan.state.status !== 'needs-human') {
-    const { length, handles } = P.agentStreak(comments);
-    const owners = [...handles].map((h) => C.memberByHandle(config, h)).filter(Boolean).map((m) => `@${m.github}`);
+  if (created && P.loopGuardTripped(comments, config.policy.max_agent_streak, { config }) && plan.state.status !== 'needs-human') {
+    const { length, handles } = P.agentStreak(comments, { config });
+    const owners = [...new Set([...handles].map((h) => P.fromHandle(h)))].map((h) => C.memberByHandle(config, h)).filter(Boolean).map((m) => `@${m.github}`);
     plan.setNs('status', 'needs-human');
     plan.comment(refereeMessage('escalate',
       `Loop guard: the last ${length} comments are all from agents (${[...handles].join(', ')}) with no human in between. `

@@ -37,7 +37,7 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 
 4. **Commit and push** `.issuemesh/`, `.github/` and `AGENTS.md`/`CLAUDE.md` to the default branch. The referee and every agent read `team.json` from there.
 
-5. **Enable the referee.** Settings → Actions → General: allow GitHub Actions, and under "Workflow permissions" allow read and write (the workflow declares its own permissions). Then run the workflow once from the Actions tab (`IssueMesh Referee`, task `setup`) if labels or the Board are missing, or run `mesh labels sync` locally.
+5. **Enable the referee.** Settings → Actions → General: allow GitHub Actions, and under "Workflow permissions" allow read and write (the workflow declares its own permissions). Keep the referee on the default `GITHUB_TOKEN`: do not give it a personal access token, because its comments verify only as `github-actions[bot]` (PROTOCOL.md section 3). Then run the workflow once from the Actions tab (`IssueMesh Referee`, task `setup`) if labels or the Board are missing, or run `mesh labels sync` locally.
 
 6. **Invite members** as collaborators with write access and send them this page.
 
@@ -48,10 +48,11 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 1. Install as in step 1 above, and `gh auth login` with **your own** account.
 2. Clone the repo; `mesh doctor` should pass and `mesh whoami` should print your handle.
 3. Start your agent:
-   - Claude Code: `/issuemesh:work`. The plugin's session-start hook also shows your inbox when you open the repo.
+   - Claude Code: `/issuemesh:work`. The plugin's hooks show your inbox when you open the repo (SessionStart) and flag new work on your next prompt (UserPromptSubmit). See [Hooks](#hooks).
    - Any other agent: save `prompt/ISSUEMESH.md` from the IssueMesh repo into yours once (`curl -fsSL https://raw.githubusercontent.com/aalhadsawane/issuemesh/v1/prompt/ISSUEMESH.md -o .issuemesh/ISSUEMESH.md`) and add it to the agent's instructions, or rely on the block `mesh init` put in `AGENTS.md`, and tell it to run the work loop.
    - Unattended: see [runners.md](runners.md).
-4. Optionally set `ISSUEMESH_ACTOR=human` in your shell when you use `mesh` by hand, so the messages are marked as human.
+4. Running several agents? Each one selects its identity with `--agent <name>` or `ISSUEMESH_AGENT=<name>` (default: your primary agent, the first in `agents[]`).
+5. Optionally set `ISSUEMESH_ACTOR=human` in your shell when you use `mesh` by hand, so the messages are marked as human.
 
 ## `team.json` reference
 
@@ -62,8 +63,13 @@ Schema: [`schema/team.schema.json`](../schema/team.schema.json). Unknown fields 
   "version": 1,
   "members": [
     { "handle": "aalhad", "github": "aalhadsawane",
-      "agent": { "enabled": true, "runtime": "claude-code", "wip": 2 },
-      "skills": ["backend"], "route_mentions_to_agent": true }
+      "agents": [
+        { "name": "claude", "runtime": "claude-code", "wip": 2 },
+        { "name": "codex", "runtime": "codex", "wip": 1 }
+      ],
+      "skills": ["backend"], "route_mentions_to_agent": true },
+    { "handle": "ben", "github": "ben-github",
+      "agent": { "enabled": true, "runtime": "claude-code", "wip": 2 } }
   ],
   "areas": { "backend": ["server/**"] },
   "triage": { "rotation": ["aalhad"], "period": "daily" },
@@ -79,11 +85,13 @@ Schema: [`schema/team.schema.json`](../schema/team.schema.json). Unknown fields 
 | `version` | always `1` | required |
 | `members[].handle` | `^[a-z0-9][a-z0-9-]{0,19}$`, unique; `referee` is reserved | required |
 | `members[].github` | GitHub login | required |
-| `members[].agent.enabled` | member has an agent (false for people who only review and merge) | `true` |
-| `members[].agent.runtime` | free-form (`claude-code`, `codex`, ...); reviews prefer a different runtime than the author | `claude-code` |
-| `members[].agent.wip` | max claims the agent holds at once | `2` |
+| `members[].agents[]` | the member's named agents; the first is the primary. Wins over `agent` if both are present | one agent |
+| `members[].agents[].name` | `^[a-z0-9][a-z0-9-]{0,19}$`, unique per member; the agent id is `<handle>/<name>` | required |
+| `members[].agents[].runtime` | free-form (`claude-code`, `codex`, ...); reviews prefer a different runtime than the author | `claude-code` |
+| `members[].agents[].wip` | max claims that agent holds at once | `2` |
+| `members[].agent` | legacy single agent `{enabled, runtime, wip}`; equals one entry in `agents` (none when `enabled: false`) | `{enabled: true}` |
 | `members[].skills` | free-form routing tags | `[]` |
-| `members[].route_mentions_to_agent` | an `@login` mention also lands in the agent's mailbox | `true` |
+| `members[].route_mentions_to_agent` | an `@login` mention also adds a ping for the agent | `true` |
 | `areas` | name → globs; ownership hints like CODEOWNERS, used to pick reviewers | `{}` |
 | `triage.rotation` | handles that take triage duty in turn | all agent-enabled members |
 | `triage.period` | `daily` or `weekly` (UTC) | `daily` |
@@ -96,12 +104,26 @@ Schema: [`schema/team.schema.json`](../schema/team.schema.json). Unknown fields 
 | `policy.agents_can_merge` | allow agents to merge PRs | `false` |
 | `policy.wake` | referee wakes CI-hosted agents via `repository_dispatch` | `false` |
 
+## Hooks
+
+The Claude Code plugin registers three hooks. All of them exit 0, stay silent outside IssueMesh repos and never block a session on error.
+
+| Hook | When | What |
+|---|---|---|
+| SessionStart | session opens | prints your GitHub queue summary |
+| UserPromptSubmit | each prompt | runs `mesh inbox -q --new-only --min-interval 10`; if an item you have not been told about exists, adds one line of context ("IssueMesh: 2 new: #12 ping, #15 review (GitHub issues/PRs in this repo that need you: pings, reviews, assigned work). Finish your current task, then run /issuemesh:work."). At most one conditional request every 10 seconds, free when nothing changed. |
+| Stop | Claude is about to stop | **Opt-in autopilot**, off unless `ISSUEMESH_AUTOPILOT=1`. If the same check finds new work, it blocks the stop once with "Run /issuemesh:work" so the session keeps going, at most `ISSUEMESH_AUTOPILOT_MAX` times per session (default 3; counter in `.git/issuemesh/`). It does nothing when Claude is already continuing because of a stop hook (`stop_hook_active`). |
+
+The hooks read only GitHub (issues, PRs, labels of this repo) through `mesh inbox`; they never touch email or any other account. Turn them off with `ISSUEMESH_HOOKS=0` (all three IssueMesh hooks), unset `ISSUEMESH_AUTOPILOT` (Stop hook only), `"disableAllHooks": true` in Claude Code settings (every hook, no per-hook switch) or `/plugin` / `claude plugin disable issuemesh`.
+
+Autopilot trade-off: each continuation spends model tokens (a full `/issuemesh:work` turn, with the context already loaded) in exchange for not waiting for you to type the command. Leave it off for interactive use; use it for long unattended sessions, and keep `ISSUEMESH_AUTOPILOT_MAX` low. Claude Code also caps consecutive stop-hook continuations itself.
+
 ## Optional: wake and a CI-hosted agent
 
 Most teams do not need this; interactive sessions and `mesh watch` are simpler ([runners.md](runners.md)). To run an agent unattended on GitHub Actions:
 
-1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, issue}`) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this; it ships with `contents: read`, so change that line when you turn wake on.
-2. Each member who wants a CI agent runs `mesh init --with-agent-runner`, copies `.github/workflows/issuemesh-agent.yml` to `issuemesh-agent-<handle>.yml`, and replaces `HANDLE` (lowercase in the `if:`/`--as`/concurrency group, uppercase in secret names).
+1. Set `"wake": true` in `policy`. The referee then sends an `issuemesh-wake` `repository_dispatch` (payload `{handle, agent?, issue}`; `agent` is set for `to:<handle>/<agent>` and `ping:<handle>/<agent>`, and for `ping:<handle>` of a member with several agents, where it names the primary agent; `to:<handle>` names no agent) when a `to:` or `ping:` label is added for an agent-enabled member. The referee workflow needs `contents: write` for this; it ships with `contents: read`, so change that line when you turn wake on.
+2. Each member who wants a CI agent runs `mesh init --with-agent-runner`, copies `.github/workflows/issuemesh-agent.yml` to `issuemesh-agent-<handle>.yml` (one file per agent for members with several), and replaces `HANDLE` (lowercase in the `if:`/`--as`/concurrency group, uppercase in secret names); the file's header says where to add `--agent`.
 3. Each such member adds two repository secrets: `ANTHROPIC_API_KEY_<HANDLE>` and `ISSUEMESH_TOKEN_<HANDLE>`, a fine-grained personal access token **of that member** with read/write on Issues, Pull requests and Contents for this repo. Never share one token between members.
 
 The job runs `mesh inbox -q` first (no LLM cost) and starts the agent only if the inbox is non-empty. Details and cost notes: [runners.md](runners.md), token handling: [security.md](security.md).

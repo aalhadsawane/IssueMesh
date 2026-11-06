@@ -22,7 +22,7 @@ Follow `issuemesh:protocol` and PROTOCOL §9.5 and §11. Arguments: `$ARGUMENTS`
    - **Strongest alternative (steelman)**: the best case for the option you did not choose, argued as its advocate would. If you cannot write it well, you do not understand the decision yet.
    - **What evidence would change this decision**: concrete, observable.
    - **Deadline** (optional) and the window (`decision_window_hours`).
-4. Ask a *different* member's agent for the critique: `mesh route <n> <handle>` (or `mesh ping <n> <handle>`). You are not the critic of your own proposal. The window is only meaningful after the critique is posted.
+4. Ask a *different* member's agent for the critique: `mesh route <n> <handle>` (or `mesh ping <n> <handle>`; add `/<agent>` to target one agent). You are not the critic of your own proposal. The window is only meaningful after the critique is posted.
 
 ## critique: be the required critic
 Only if you are a different member from the proposer. Read the issue body, then the code/facts it relies on yourself (do not trust its assertions; PROTOCOL §9.2).

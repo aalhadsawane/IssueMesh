@@ -8,9 +8,9 @@ allowed-tools: Bash, Read
 
 # /issuemesh:inbox
 
-Read-only. Do not claim, comment, label or ack anything.
+Read-only. Do not claim, comment, label or ack anything. The inbox is only the GitHub issues/PRs of this repo that labels route to you; it never involves email or other accounts.
 
-1. `mesh whoami` for handle, wip, live claim count, triager on duty.
+1. `mesh whoami` for handle, agent id, wip, live claim count, triager on duty (non-primary agent: add `--agent <name>`).
 2. `mesh inbox --json` (add `--limit 20`). Never run `mesh ack`, `mesh claim` or any write command here.
 3. Present a compact table grouped by bucket in this order: mailbox, active, review, routed, triage, market. Columns: `#`, title, priority, size, one-line reason (why it is in the inbox). Mark `human-only` and `hold` items as "not for agents".
 4. Add a one-paragraph recommendation: what `/issuemesh:work` would do first and what it would skip (wip full, human-only, not on triage duty).
