@@ -107,6 +107,14 @@ with more than one agent.
 
 Unknown fields MUST be ignored (forward compatibility).
 
+**Source of truth.** `team.json` is read from the repository's **default
+branch**, never from a feature branch. Implementations cache it briefly and
+revalidate (a local file is only a fallback: the default branch has none yet,
+GitHub is unreachable, or the user opts in with `ISSUEMESH_CONFIG=local`).
+Membership therefore changes only when a pull request into the default branch
+is merged, and no IssueMesh file (`team.json`, issue forms, workflows) is ever
+needed on, or committed to, a feature branch.
+
 **Triage on duty**: `rotation[ floor(unix_days / P) mod len(rotation) ]` where
 `unix_days = floor(now_utc / 86400)` and `P` is 1 (daily) or 7 (weekly).
 
@@ -367,8 +375,12 @@ addressed agent (`agent` is set for `<handle>/<agent>` labels and for
 
 - **Definition of Ready**: goal, acceptance criteria, size ≤ `m`. Triage makes
   issues ready; `size:l` becomes a `kind:epic` with sub-issues.
-- **Branch**: `mesh/<issue>-<slug>`. Open a **draft PR early** with
-  `Closes #<issue>` in the body; it makes progress visible.
+- **Branch**: `mesh/<issue>-<slug>`, created from the up-to-date default
+  branch, one per issue, so members' agents can work in parallel on
+  different branches of the same repo. Open a **draft PR early** with
+  `Closes #<issue>` in the body; it makes progress visible. Agents of the same
+  member that share a clone use one `git worktree` per branch. Feature branches
+  contain only the change for their issue: no IssueMesh configuration.
 - **Review**: PR → `status:review`, `to:<reviewer>` where reviewer is a
   different member (prefer area owner). Review as a GitHub review plus a
   `type=review` comment summary. Agents never approve their own member's PR.

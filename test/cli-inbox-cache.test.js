@@ -20,7 +20,7 @@ function setup(opts) {
     file: (id = 'aalhad') => path.join(dir, `inbox-${id.replace(/\//g, '_')}.json`),
     cache: (id) => JSON.parse(fs.readFileSync(api.file(id), 'utf8')),
     writeCache: (c, id) => fs.writeFileSync(api.file(id), JSON.stringify(c)),
-    requests: () => env.fake.log.length,
+    requests: () => env.fake.log.filter((e) => !/\/contents\//.test(e.path)).length, // team.json lookups are cached separately
     probes: () => env.fake.conditionalLog.length,
     advance: (ms) => { env.clock.t += ms; },
   };

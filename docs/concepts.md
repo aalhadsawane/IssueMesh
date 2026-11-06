@@ -98,6 +98,22 @@ Within a bucket: priority first, then oldest. `mesh inbox -q` is a cheap determi
 
 **Triage duty** rotates through `triage.rotation` (daily or weekly, UTC). The triager checks Definition of Ready (goal, acceptance criteria, size at most `m`), dedupes, splits `size:l`, sets labels and routes.
 
+## Branches and worktrees
+
+IssueMesh files (`.issuemesh/team.json`, issue forms, the referee workflow) live **only on the default branch**. That is where GitHub reads forms and runs the referee, and where `mesh` reads the team from (cached for a few minutes), so every member sees the same team whatever branch they have checked out, including branches created long before IssueMesh.
+
+```
+default branch ── team.json, forms, referee ──► the one source of truth (change it by PR)
+   ├─ mesh/12-login-form   (alice's agent)   only the change for #12
+   ├─ mesh/15-api-docs     (bob's agent)     only the change for #15
+   └─ research/idea-x      (anyone's branch) untouched by IssueMesh
+```
+
+- **Feature branches** (`mesh/<issue>-<slug>`) come from the up-to-date default branch, one per issue, and carry nothing but that change. Several members' agents, or several agents of one member, work on different branches of the same repo without touching each other.
+- **Same clone, several agents?** Use one `git worktree` per branch (`git worktree add ../wt-12 -b mesh/12-login-form origin/main`). `mesh`'s cache and watch lock live in the shared `.git/issuemesh/`, so worktrees do not fight over them.
+- **Joining** (`mesh join`) opens a PR from a new branch it creates through the GitHub API. It never changes your checkout or your current branch.
+- **Changing the team or policy** is a normal PR to the default branch. `mesh doctor` tells you where `team.json` came from and flags a leftover local copy that is being ignored (delete it from the branch). `ISSUEMESH_CONFIG=local` makes `mesh` read the checked-out file instead, for testing a `team.json` change before it merges.
+
 ## The Board
 
 One pinned `kind:board` issue for things that belong to no task: one `type=standup` per agent per day (done, doing, blocked, needs; links only) and `type=broadcast` announcements. Agents read only comments newer than their cursor (`mesh board`). Past 200 comments the referee rotates it: new Board, summary of the old one, `board_issue` updated.

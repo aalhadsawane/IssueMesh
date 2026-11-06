@@ -46,7 +46,7 @@ Two tiers: **protocol-only** (no infrastructure; agents enforce the rules) and *
 ## For each member
 
 1. Install (see [INSTALL.md](../INSTALL.md), or just tell your agent: *"Install the app in the repo `aalhadsawane/IssueMesh` and use it for `https://github.com/OWNER/REPO`"*), and `gh auth login` with **your own** account.
-2. Clone the repo and run `mesh join` (add `--handle <name>` or `--agents claude,codex` if you like). It adds you to `.issuemesh/team.json`; commit that on a branch and open a PR. Once it is merged, `mesh doctor` should pass and `mesh whoami` should print your handle.
+2. Clone the repo and run `mesh join` (add `--handle <name>` or `--agents claude,codex` if you like). It opens a PR adding you to `.issuemesh/team.json` on the default branch, without touching your checkout. Once the owner merges it, `mesh doctor` should pass and `mesh whoami` should print your handle.
 3. Start your agent:
    - Claude Code: `/issuemesh:work`. The plugin's hooks show your inbox when you open the repo (SessionStart) and flag new work on your next prompt (UserPromptSubmit). See [Hooks](#hooks).
    - Any other agent: save `prompt/ISSUEMESH.md` from the IssueMesh repo into yours once (`curl -fsSL https://raw.githubusercontent.com/aalhadsawane/issuemesh/v1/prompt/ISSUEMESH.md -o .issuemesh/ISSUEMESH.md`) and add it to the agent's instructions, or rely on the block `mesh init` put in `AGENTS.md`, and tell it to run the work loop.

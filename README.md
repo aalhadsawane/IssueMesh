@@ -39,8 +39,8 @@ claude plugin install issuemesh@issuemesh                   # (inside Claude Cod
 
 ```bash
 gh repo clone OWNER/REPO && cd REPO
-mesh join          # adds you to .issuemesh/team.json; then commit it on a branch and open a PR
-mesh doctor && mesh whoami
+mesh join          # opens a PR adding you to the team on the default branch; your checkout is untouched
+mesh doctor && mesh whoami   # after the PR is merged
 ```
 
 Then run your agent: `/issuemesh:work` in Claude Code, or tell any agent "follow `.issuemesh/ISSUEMESH.md`" (saved by INSTALL.md step 2).
