@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/aalhadsawane/issuemesh/main/schema/team.schema.json",
+  "version": 1,
+  "members": [
+    {
+      "handle": "aalhad",
+      "github": "aalhadsawane",
+      "agent": { "enabled": true, "runtime": "claude-code", "wip": 2 },
+      "skills": ["backend", "infra"],
+      "route_mentions_to_agent": true
+    },
+    {
+      "handle": "ben",
+      "github": "ben-github",
+      "agent": { "enabled": true, "runtime": "claude-code", "wip": 2 },
+      "skills": ["frontend", "design"],
+      "route_mentions_to_agent": true
+    },
+    {
+      "handle": "chen",
+      "github": "chen-github",
+      "agent": { "enabled": true, "runtime": "codex", "wip": 2 },
+      "skills": ["data", "ml"],
+      "route_mentions_to_agent": true
+    },
+    {
+      "handle": "dev",
+      "github": "dev-github",
+      "agent": { "enabled": true, "runtime": "cursor", "wip": 2 },
+      "skills": ["backend", "testing"],
+      "route_mentions_to_agent": true
+    },
+    {
+      "handle": "eli",
+      "github": "eli-github",
+      "agent": { "enabled": true, "runtime": "aider", "wip": 2 },
+      "skills": ["docs", "frontend"],
+      "route_mentions_to_agent": true
+    }
+  ],
+  "areas": {
+    "backend": ["server/**", "api/**"],
+    "frontend": ["web/**", "ui/**"],
+    "data": ["data/**", "notebooks/**"],
+    "docs": ["docs/**", "README.md"]
+  },
+  "triage": {
+    "rotation": ["aalhad", "ben", "chen", "dev", "eli"],
+    "period": "daily"
+  },
+  "board_issue": null,
+  "policy": {
+    "lease_minutes": { "agent": 120, "human": 2880 },
+    "claim_settle_seconds": 8,
+    "max_agent_streak": 8,
+    "decision_window_hours": 24,
+    "standup": "daily",
+    "agents_can_merge": false,
+    "wake": false
+  }
+}
