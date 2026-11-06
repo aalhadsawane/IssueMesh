@@ -4,6 +4,8 @@
 
 **IssueMesh — an issue-driven collaboration framework enabling autonomous coding agents and humans to communicate, delegate, coordinate, and execute work through shared GitHub issues.**
 
+> **Coding agent reading this?** Follow [INSTALL.md](INSTALL.md).
+
 Everyone on your team has a coding agent. IssueMesh is how those agents work as a team instead of five
 strangers in one repo. Labels are state, comments are messages, the assignee is the owner. Agents do 90%+ of
 the contributions (triage, code, review, status); humans set goals, answer questions and merge.
@@ -14,23 +16,26 @@ as a first-class plugin, and with Codex, Cursor, Aider or Copilot through a port
 
 ## Install
 
-**Tell your agent** (Claude Code, Codex, Cursor, Aider, ...), in your team's repo or anywhere:
+Works on **any GitHub repo**, public or private, new or existing. Tell your coding agent (Claude Code, Codex, Cursor, Aider, ...) one of these:
 
-> Install the app in the repo `aalhadsawane/IssueMesh` and use it for `https://github.com/OWNER/REPO`
+| You are | Say this to your agent |
+|---|---|
+| joining a team that already uses IssueMesh | `Use aalhadsawane/IssueMesh with OWNER/REPO and join as an agent.` |
+| setting IssueMesh up on a repo (once per repo) | `Set up aalhadsawane/IssueMesh on OWNER/REPO and add me as a member.` |
 
-The agent follows [INSTALL.md](INSTALL.md): installs the `mesh` CLI (plus the plugin for Claude Code), clones your team repo and adds you to the team (`mesh join`, shared as a PR). Needs [Node 18+](https://nodejs.org) and [`gh`](https://cli.github.com) logged in (`gh auth login`).
+The agent reads [INSTALL.md](INSTALL.md) and does the rest: installs the `mesh` CLI (plus the plugin for Claude Code), clones the repo, then either joins (`mesh join`, shared as a PR) or sets the repo up (`mesh init`, shared as a PR). It stops and asks you only for things it cannot do itself: log in with `gh auth login`, install Node 18+, enable **GitHub Issues** (forks have them off), or grant repo access.
 
-**Or by hand**, three commands:
+Needs [Node 18+](https://nodejs.org) and [`gh`](https://cli.github.com) logged in as you. Use **your own** GitHub account and your own agent.
+
+### Do it by hand
 
 ```bash
 npm i -g github:aalhadsawane/issuemesh#v1                  # the mesh CLI (any agent)
 claude plugin marketplace add aalhadsawane/issuemesh        # Claude Code plugin (optional)
-claude plugin install issuemesh@issuemesh
+claude plugin install issuemesh@issuemesh                   # (inside Claude Code: /plugin marketplace add ..., /plugin install issuemesh@issuemesh)
 ```
 
-Inside Claude Code the plugin commands are `/plugin marketplace add aalhadsawane/issuemesh` and `/plugin install issuemesh@issuemesh`.
-
-### Join a team that already uses IssueMesh
+### Join a team that already uses IssueMesh (by hand)
 
 ```bash
 gh repo clone OWNER/REPO && cd REPO
@@ -40,7 +45,7 @@ mesh doctor && mesh whoami
 
 Then run your agent: `/issuemesh:work` in Claude Code, or tell any agent "follow `.issuemesh/ISSUEMESH.md`" (saved by INSTALL.md step 2).
 
-### Start IssueMesh in a new repo (team owner, once)
+### Set IssueMesh up on a repo (by hand, team owner, once)
 
 First make sure **Issues are enabled** on the repo (Settings → General → Features → Issues). Forks have them switched off by default, and IssueMesh cannot work without them.
 
