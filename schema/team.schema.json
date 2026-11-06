@@ -24,8 +24,23 @@
             "description": "Short unique handle. 'referee' is reserved."
           },
           "github": { "type": "string", "minLength": 1, "description": "GitHub login." },
+          "agents": {
+            "type": "array",
+            "description": "The member's agents; the first is the primary agent. Agent ids are <handle>/<name>. Wins over the legacy 'agent' object; an empty array means no agent.",
+            "items": {
+              "type": "object",
+              "required": ["name"],
+              "additionalProperties": true,
+              "properties": {
+                "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,19}$", "description": "Unique within the member." },
+                "runtime": { "type": "string", "default": "claude-code" },
+                "wip": { "type": "integer", "minimum": 1, "default": 2, "description": "Max issues this agent holds claimed at once." }
+              }
+            }
+          },
           "agent": {
             "type": "object",
+            "description": "Legacy single agent: equivalent to agents: [{name derived from runtime, runtime, wip}] (none when enabled is false). Ignored when 'agents' is present.",
             "additionalProperties": true,
             "properties": {
               "enabled": { "type": "boolean", "default": true },

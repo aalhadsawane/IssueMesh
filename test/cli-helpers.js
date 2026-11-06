@@ -26,13 +26,30 @@ class FakeGitHub {
     this.log = [];
     this.nextComment = 100;
     this.nextIssue = 1;
+    this.version = 1; // bumped by every mutation; its ETag is `W/"v<version>"`
+    this.conditionalLog = [];
+    this.conditionalFails = false;
     this.transport = this.transport.bind(this);
+    this.conditional = this.conditional.bind(this);
+  }
+
+  /** Bump the ETag after mutating state directly (tests poking `issues`). */
+  touch() { this.version += 1; }
+
+  /** Simulated `gh api -i -H 'If-None-Match: ...'` (200 with an ETag, or 304 when unchanged). */
+  async conditional(rawPath, etag) {
+    this.conditionalLog.push({ path: rawPath, etag });
+    if (this.conditionalFails) throw new HttpError(500, 'conditional requests unavailable');
+    const cur = `W/"v${this.version}"`;
+    if (etag === cur) return { status: 304, etag: cur, data: null };
+    return { status: 200, etag: cur, data: [] };
   }
 
   iso() { return this.clock().toISOString().replace(/\.\d{3}Z$/, 'Z'); }
 
   addIssue({ title = 'Issue', labels = [], assignees = [], state = 'open', pr = false, body = '', createdAt } = {}) {
     const number = this.nextIssue++;
+    this.version += 1;
     const t = createdAt || this.iso();
     this.issues.set(number, {
       number, title, body, state, labels: [...labels], assignees: [...assignees], pr,
@@ -43,6 +60,7 @@ class FakeGitHub {
 
   addComment(n, body, { login = 'someone', id, createdAt } = {}) {
     const t = createdAt || this.iso();
+    this.version += 1;
     const c = { id: id || this.nextComment++, issue_number: n, body, user: { login }, created_at: t, updated_at: t };
     if (id && id >= this.nextComment) this.nextComment = id + 1;
     this.comments.push(c);
@@ -65,6 +83,7 @@ class FakeGitHub {
 
   async transport(method, rawPath, body) {
     this.log.push({ method, path: rawPath, body });
+    if (method !== 'GET') this.version += 1;
     const u = new URL(rawPath, 'https://api.test/');
     const p = u.pathname.replace(/^\//, '');
     const q = u.searchParams;
@@ -184,7 +203,7 @@ function makeEnv({ team = TEAM, user = 'aalhad-gh', writeTeam = true } = {}) {
     async run(argv, over = {}) {
       let out = '';
       let err = '';
-      const gh = createGh(fake.transport, { dryRun: argv.includes('--dry-run'), log: (s) => { err += `${s}\n`; } });
+      const gh = createGh(fake.transport, { dryRun: argv.includes('--dry-run'), log: (s) => { err += `${s}\n`; }, conditional: fake.conditional });
       env.gh = gh;
       const code = await main(argv, {
         gh,

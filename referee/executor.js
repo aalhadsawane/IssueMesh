@@ -10,7 +10,7 @@
  *   createIssue {title, body, labels[], then(created) -> actions[]}
  *   closeIssue {issue, reason}         pinIssue / unpinIssue {nodeId}
  *   syncLabels {labels[{name,color,description}]}
- *   dispatch {handle, issue}           log {level, message}
+ *   dispatch {handle, agent?, issue}   log {level, message}
  *
  * Label changes are coalesced per issue and diffed against the issue's live
  * labels: labels already present are not re-added, absent ones are not removed,
@@ -110,7 +110,7 @@ function createExecutor({ github, context, core }) {
         return undefined;
       case 'syncLabels': return syncLabels(a);
       case 'dispatch':
-        await github.rest.repos.createDispatchEvent({ ...base, event_type: EVENT_TYPE, client_payload: { handle: a.handle, issue: a.issue } });
+        await github.rest.repos.createDispatchEvent({ ...base, event_type: EVENT_TYPE, client_payload: { handle: a.handle, ...(a.agent ? { agent: a.agent } : {}), issue: a.issue } });
         return undefined;
       case 'log': (core[a.level] || core.info).call(core, a.message); return undefined;
       default: throw new Error(`unknown action type: ${a.type}`);

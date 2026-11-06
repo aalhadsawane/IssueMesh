@@ -13,10 +13,11 @@ function labelNames(labels) {
   return (labels || []).map((l) => (typeof l === 'string' ? l : l && l.name)).filter(Boolean);
 }
 
-/** Options for protocol claim functions. */
+/** Options for protocol claim functions (markers are verified against comment authors via `config`). */
 function claimOpts(config, now) {
   return {
     now,
+    config,
     humanLeaseMinutes: config.policy.lease_minutes.human,
     resolveHandle: (login) => {
       const m = C.memberByLogin(config, login);
@@ -25,9 +26,9 @@ function claimOpts(config, now) {
   };
 }
 
-/** Members whose agent is enabled. */
+/** Members with at least one agent. */
 function agentMembers(config) {
-  return config.members.filter((m) => !m.agent || m.agent.enabled !== false);
+  return config.members.filter((m) => C.hasAgent(m));
 }
 
 /**
@@ -37,6 +38,22 @@ function agentMembers(config) {
 function resolveMember(config, arg) {
   const a = String(arg || '').toLowerCase();
   return C.memberByHandle(config, a) || C.memberByLogin(config, a) || null;
+}
+
+/**
+ * Resolve a slash-command target: a handle, an agent id (`handle/agent`) or a
+ * member's GitHub login. `address` is the value for `to:` / `ping:` labels
+ * (bare handle for member-level targets); `agent` is null when the member has
+ * no agents.
+ * @returns {?{member: object, agent: ?object, address: string, explicit: boolean}}
+ */
+function resolveTarget(config, arg) {
+  const a = String(arg || '').toLowerCase();
+  const r = C.resolveAgent(config, a);
+  if (r) return r;
+  if (a.includes('/')) return null;
+  const m = C.memberByLogin(config, a);
+  return m ? C.resolveAgent(config, m.handle) : null;
 }
 
 /** A comment written by the referee: marker from=referee actor=agent. */
@@ -78,4 +95,4 @@ function releaseClaims(plan, claims, byId, reason) {
   return restoreTo;
 }
 
-module.exports = { ONE_NAMESPACES, labelNames, claimOpts, agentMembers, resolveMember, refereeMessage, closingRefs, releaseClaims };
+module.exports = { ONE_NAMESPACES, labelNames, claimOpts, agentMembers, resolveMember, resolveTarget, refereeMessage, closingRefs, releaseClaims };

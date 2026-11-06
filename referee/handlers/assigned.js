@@ -26,7 +26,7 @@ module.exports = async function onAssigned({ payload, config, now, api }) {
   if (![null, 'triage', 'ready', 'claimed'].includes(plan.state.status)) return [];
 
   if (P.liveClaims(comments, claimOpts(config, now)).length) return []; // a recorded claim exists
-  const recent = P.extractClaims(comments).some((c) => c.type === 'claim' && c.handle === member.handle && now - new Date(c.createdAt) < RECENT_MS);
+  const recent = P.extractClaims(comments, claimOpts(config, now)).some((c) => c.type === 'claim' && c.handle === member.handle && now - new Date(c.createdAt) < RECENT_MS);
   if (recent) return [];
 
   plan.setNs('status', 'claimed');

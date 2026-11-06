@@ -473,3 +473,261 @@ test('classifyInbox does not mutate its input or leak helper fields', () => {
   assert.deepEqual(it, copy);
   assert.equal(Object.keys(r[0]).includes('_prio'), false);
 });
+
+/* ============================================ agent ids, attribution (F1/F2) */
+
+const mcfg = normalizeConfig({
+  version: 1,
+  members: [
+    { handle: 'aalhad', github: 'AalhadS', agents: [{ name: 'claude', wip: 2 }, { name: 'codex', wip: 1 }] },
+    { handle: 'bob', github: 'bob-gh' },
+    { handle: 'chen', github: 'chen-gh', agent: { enabled: false } },
+  ],
+  triage: { rotation: ['bob', 'aalhad'] }, // aalhad on duty on NOW
+});
+const [AAL, BOB, CHEN] = mcfg.members;
+const authored = (login, from, type, extra = {}, id = nextId++, actor = 'agent') => ({
+  id, user: { login }, created_at: iso(-10), body: P.composeMessage({ from, actor, type, body: 'x', ...extra }),
+});
+
+test('labels with agent ids: slash values parse as to:/ping: values and survive setNamespace', () => {
+  const L = P.parseLabels(['to:aalhad/claude', 'ping:aalhad/codex', 'ping:bob', 'status:ready']);
+  assert.equal(L.to, 'aalhad/claude');
+  assert.deepEqual(L.pings, ['aalhad/codex', 'bob']);
+  assert.deepEqual(L.other, []);
+  assert.equal(P.parseLabels(['to:aalhad', 'to:aalhad/codex']).conflicts.to.length, 2);
+  assert.deepEqual(P.setNamespace(['to:aalhad/claude', 'status:ready'], 'to', 'aalhad/codex'), ['status:ready', 'to:aalhad/codex']);
+  assert.deepEqual(P.setNamespace(['to:aalhad/claude', 'ping:aalhad/claude'], 'to', null), ['ping:aalhad/claude']);
+  assert.equal(P.toLabel('aalhad/claude'), 'to:aalhad/claude');
+  assert.equal(P.pingLabel('aalhad/codex'), 'ping:aalhad/codex');
+});
+
+test('standardLabels: handle labels for all members, agent labels only for members with >1 agent', () => {
+  const names = P.standardLabels(mcfg.members).map((l) => l.name);
+  for (const n of ['to:aalhad', 'to:bob', 'to:chen', 'ping:aalhad', 'ping:bob', 'ping:chen', 'to:any']) assert.ok(names.includes(n), n);
+  for (const n of ['to:aalhad/claude', 'to:aalhad/codex', 'ping:aalhad/claude', 'ping:aalhad/codex']) assert.ok(names.includes(n), n);
+  assert.ok(!names.some((n) => n.startsWith('to:bob/') || n.startsWith('ping:bob/') || n.startsWith('ping:chen/')));
+  assert.equal(new Set(names).size, names.length);
+  // strings: handles and agent ids still work
+  const viaStrings = P.standardLabels(['aalhad', 'aalhad/claude']).map((l) => l.name);
+  assert.ok(viaStrings.includes('ping:aalhad/claude') && viaStrings.includes('to:aalhad'));
+  for (const l of P.standardLabels(mcfg.members)) assert.ok(l.name.length <= 50 && l.description.length <= 100, l.name);
+  assert.equal(P.standardLabels(['bob']).find((l) => l.name === 'ping:bob').description, "Unread message for bob's agent");
+});
+
+test('fromHandle, senderName and signature for agent ids', () => {
+  assert.equal(P.fromHandle('aalhad/claude'), 'aalhad');
+  assert.equal(P.fromHandle('aalhad'), 'aalhad');
+  assert.equal(P.fromHandle(undefined), '');
+  assert.equal(P.senderName('aalhad/claude'), 'aalhad/claude');
+  assert.equal(P.senderName('bob'), "bob's agent");
+  assert.equal(P.signature('aalhad/claude'), '<sub>🤖 aalhad/claude · IssueMesh</sub>');
+  assert.equal(P.signature('bob'), "<sub>🤖 bob's agent · IssueMesh</sub>");
+  const msg = P.composeMessage({ from: 'aalhad/codex', type: 'note', body: 'hi' });
+  assert.equal(P.parseMarker(msg).from, 'aalhad/codex');
+  assert.ok(msg.endsWith('<sub>🤖 aalhad/codex · IssueMesh</sub>'));
+  assert.equal(P.actorOf(msg), 'agent');
+});
+
+test('targetsAgent: the mailbox rule and to: routing', () => {
+  // to:<handle> reaches every agent; to:<handle/agent> only that agent
+  assert.equal(P.targetsAgent('aalhad', AAL, 'claude', 'to'), true);
+  assert.equal(P.targetsAgent('aalhad', AAL, 'codex', 'to'), true);
+  assert.equal(P.targetsAgent('aalhad/codex', AAL, 'codex', 'to'), true);
+  assert.equal(P.targetsAgent('aalhad/codex', AAL, 'claude', 'to'), false);
+  // ping:<handle> is the primary agent's only
+  assert.equal(P.targetsAgent('aalhad', AAL, 'claude', 'ping'), true);
+  assert.equal(P.targetsAgent('aalhad', AAL, 'codex', 'ping'), false);
+  assert.equal(P.targetsAgent('aalhad/codex', AAL, 'codex', 'ping'), true);
+  assert.equal(P.targetsAgent('Aalhad/Claude', AAL, 'claude', 'ping'), true);
+  assert.equal(P.targetsAgent('bob', AAL, 'claude', 'to'), false);
+  assert.equal(P.targetsAgent('bob/claude', AAL, 'claude', 'to'), false);
+  assert.equal(P.targetsAgent('bob', BOB, 'claude', 'ping'), true);
+  assert.equal(P.targetsAgent('bob/claude', BOB, 'claude', 'ping'), true);
+  assert.equal(P.targetsAgent('chen', CHEN, null, 'ping'), true);
+});
+
+/* ---- verifyComment (F2) ---- */
+
+test('verifyComment: own marker, case-insensitive login, agent id', () => {
+  const v = P.verifyComment(authored('aalhads', 'aalhad/claude', 'claim', { lease: iso(60) }), mcfg);
+  assert.equal(v.verified, true);
+  assert.equal(v.handle, 'aalhad');
+  assert.equal(v.agentId, 'aalhad/claude');
+  assert.equal(v.actor, 'agent');
+  assert.equal(v.marker.type, 'claim');
+  const plain = P.verifyComment(authored('bob-gh', 'bob', 'note'), mcfg);
+  assert.deepEqual([plain.verified, plain.handle, plain.agentId], [true, 'bob', 'bob']);
+});
+
+test('verifyComment: a marker whose from= is another member is unverified (treated as a human comment by the author)', () => {
+  const v = P.verifyComment(authored('bob-gh', 'aalhad', 'claim', { lease: iso(60) }), mcfg);
+  assert.equal(v.verified, false);
+  assert.equal(v.marker, null);
+  assert.equal(v.actor, 'human');
+  assert.equal(v.handle, 'bob'); // its real author
+  assert.equal(v.agentId, null);
+  assert.equal(P.verifyComment(authored('bob-gh', 'aalhad/claude', 'note'), mcfg).verified, false);
+});
+
+test('verifyComment: non-members never verify; github-actions[bot] verifies any from', () => {
+  const stranger = P.verifyComment(authored('stranger', 'aalhad', 'note'), mcfg);
+  assert.deepEqual([stranger.verified, stranger.handle, stranger.actor], [false, null, 'human']);
+  const strangerOwn = P.verifyComment(authored('stranger', 'stranger', 'note'), mcfg);
+  assert.equal(strangerOwn.verified, false);
+  for (const login of ['github-actions[bot]', 'GitHub-Actions[bot]']) {
+    const bot = P.verifyComment(authored(login, 'referee', 'escalate'), mcfg);
+    assert.deepEqual([bot.verified, bot.handle, bot.agentId], [true, 'referee', 'referee']);
+    assert.equal(P.verifyComment(authored(login, 'aalhad', 'claim', { actor: 'human' }, 5, 'human'), mcfg).actor, 'human');
+  }
+  // a member cannot pose as the referee
+  assert.equal(P.verifyComment(authored('aalhads', 'referee', 'escalate'), mcfg).verified, false);
+});
+
+test('verifyComment: no marker, malformed marker, missing user, actor=human', () => {
+  assert.deepEqual(P.verifyComment({ id: 1, body: 'plain', user: { login: 'bob-gh' } }, mcfg), { verified: false, handle: 'bob', agentId: null, actor: 'human', marker: null, login: 'bob-gh' });
+  assert.equal(P.verifyComment({ id: 1, body: '<!-- issuemesh v1 type=claim -->', user: { login: 'bob-gh' } }, mcfg).verified, false);
+  assert.equal(P.verifyComment({ id: 1, body: '<!-- issuemesh v2 from=bob actor=agent type=note -->' , user: { login: 'bob-gh' } }, mcfg).verified, false);
+  const noUser = P.verifyComment({ id: 1, body: P.composeMessage({ from: 'bob', type: 'note' }) }, mcfg);
+  assert.deepEqual([noUser.verified, noUser.handle], [false, null]);
+  const human = P.verifyComment(authored('bob-gh', 'bob', 'note', {}, 7, 'human'), mcfg);
+  assert.deepEqual([human.verified, human.actor], [true, 'human']);
+});
+
+/* ---- claims, arbitration, streak with opts.config (F2) ---- */
+
+const live = (comments, extra = {}) => P.liveClaims(comments, { now: NOW, humanLeaseMinutes: 2880, config: mcfg, ...extra });
+
+test('extractClaims: records carry handle (member) and agentId (full from)', () => {
+  const [c] = P.extractClaims([authored('aalhads', 'aalhad/codex', 'claim', { lease: iso(60) }, 3)], { config: mcfg });
+  assert.deepEqual([c.handle, c.agentId, c.actor, c.type], ['aalhad', 'aalhad/codex', 'agent', 'claim']);
+  const [h] = P.extractClaims([humanC('bob-gh', '/claim', 4)], { config: mcfg, resolveHandle: () => 'bob' });
+  assert.deepEqual([h.handle, h.agentId, h.actor], ['bob', 'bob', 'human']);
+  // without config nothing is verified: legacy behaviour
+  const [legacy] = P.extractClaims([agentC('zed', 'claim', { lease: iso(60) }, 9)]);
+  assert.deepEqual([legacy.handle, legacy.agentId], ['zed', 'zed']);
+});
+
+test('forged claim (from=other member) is ignored; it cannot win arbitration', () => {
+  const forged = authored('bob-gh', 'aalhad/claude', 'claim', { lease: iso(60) }, 5); // lowest id, but bob did not write for aalhad
+  const real = authored('aalhads', 'aalhad/claude', 'claim', { lease: iso(60) }, 9);
+  const r = P.arbitrate([real, forged], { now: NOW, config: mcfg });
+  assert.equal(r.winner.commentId, 9);
+  assert.equal(r.losers.length, 0);
+  // without verification the forgery would have won
+  assert.equal(P.arbitrate([real, forged], { now: NOW }).winner.commentId, 5);
+});
+
+test('forged claim from a non-member, and /claim from a non-member, are ignored', () => {
+  assert.equal(live([authored('stranger', 'stranger', 'claim', { lease: iso(60) }, 1)]).length, 0);
+  assert.equal(live([humanC('stranger', '/claim', 2)]).length, 0);
+  assert.equal(live([humanC('stranger', '/claim', 2)], { config: undefined }).length, 1); // legacy path
+});
+
+test('an unverified marker is an ordinary human comment: a /claim line inside it counts as the author\'s human claim', () => {
+  const sneaky = { id: 4, user: { login: 'bob-gh' }, created_at: iso(-5), body: '<!-- issuemesh v1 from=aalhad actor=agent type=note -->\n/claim' };
+  const claims = P.extractClaims([sneaky], { config: mcfg, resolveHandle: () => 'bob', humanLeaseMinutes: 60 });
+  assert.deepEqual(claims.map((c) => [c.handle, c.actor]), [['bob', 'human']]);
+});
+
+test('referee-authored (github-actions[bot]) human-claim records verify for the member named in from', () => {
+  const rec = authored('github-actions[bot]', 'bob', 'claim', { lease: iso(60), actor: 'human' }, 6, 'human');
+  const claims = live([rec]);
+  assert.equal(claims.length, 1);
+  assert.deepEqual([claims[0].handle, claims[0].actor, claims[0].login], ['bob', 'human', 'github-actions[bot]']);
+});
+
+test('liveClaims: only a member\'s own /release releases; a non-member cannot', () => {
+  const claim = humanC('bob-gh', '/claim', 3);
+  assert.equal(live([claim, humanC('stranger', '/release', 4)]).length, 1);
+  assert.equal(live([claim, humanC('bob-gh', '/release', 4)]).length, 0);
+  // a forged-marker /release does not hide behind the marker: it is the author's own human comment
+  const forgedRelease = { id: 5, user: { login: 'bob-gh' }, created_at: iso(-1), body: '<!-- issuemesh v1 from=aalhad actor=agent type=note -->\n/release' };
+  assert.equal(live([claim, forgedRelease]).length, 0);
+});
+
+test('claims by two agents of one member race like any two claimants (lowest id wins)', () => {
+  const a = authored('aalhads', 'aalhad/codex', 'claim', { lease: iso(60) }, 12);
+  const b = authored('aalhads', 'aalhad/claude', 'claim', { lease: iso(60) }, 11);
+  const r = P.arbitrate([a, b], { now: NOW, config: mcfg });
+  assert.equal(r.winner.agentId, 'aalhad/claude');
+  assert.deepEqual(r.losers.map((l) => l.agentId), ['aalhad/codex']);
+});
+
+test('agentStreak/loopGuard: forged markers neither extend nor hide the streak; ids count as distinct senders', () => {
+  const real = [
+    authored('aalhads', 'aalhad/claude', 'note', {}, 1),
+    authored('aalhads', 'aalhad/codex', 'note', {}, 2),
+    authored('bob-gh', 'bob', 'note', {}, 3),
+  ];
+  const s = P.agentStreak(real, { config: mcfg });
+  assert.equal(s.length, 3);
+  assert.deepEqual([...s.handles].sort(), ['aalhad/claude', 'aalhad/codex', 'bob']);
+  assert.equal(P.loopGuardTripped(real, 3, { config: mcfg }), true);
+  // two agents of ONE member are two senders: they can loop with each other
+  assert.equal(P.loopGuardTripped(real.slice(0, 2), 2, { config: mcfg }), true);
+  assert.equal(P.loopGuardTripped([real[0], authored('aalhads', 'aalhad/claude', 'note', {}, 4)], 2, { config: mcfg }), false);
+
+  // a forged agent marker (bob writing as aalhad) is a human comment: it resets the streak
+  const forged = authored('bob-gh', 'aalhad/claude', 'note', {}, 4);
+  const withForged = [...real, forged];
+  assert.equal(P.agentStreak(withForged, { config: mcfg }).length, 0);
+  assert.equal(P.loopGuardTripped(withForged, 3, { config: mcfg }), false);
+  // ...and a forged marker in the middle cannot extend a streak either
+  const spaced = [authored('aalhads', 'aalhad/claude', 'note', {}, 11), authored('bob-gh', 'aalhad/claude', 'note', {}, 12), authored('aalhads', 'aalhad/codex', 'note', {}, 13), authored('bob-gh', 'bob', 'note', {}, 14)];
+  assert.equal(P.agentStreak(spaced, { config: mcfg }).length, 2);
+  // legacy (no config): markers are trusted as written
+  assert.equal(P.agentStreak(withForged).length, 4);
+});
+
+test('agentStreak: the referee bot\'s escalation counts as an agent comment', () => {
+  const ref = authored('github-actions[bot]', 'referee', 'escalate', {}, 8);
+  assert.equal(P.agentStreak([authored('aalhads', 'aalhad/claude', 'note', {}, 7), ref], { config: mcfg }).length, 2);
+});
+
+/* ---- classifyInbox with several agents (F1) ---- */
+
+const cctx = (agent, extra = {}) => ({ me: AAL, config: mcfg, now: NOW, myLiveClaimCount: 0, agent, ...extra });
+
+test('classifyInbox: mailbox rule - ping:<handle> goes to the primary agent only', () => {
+  const bare = item(['ping:aalhad']);
+  const toCodex = item(['ping:aalhad/codex']);
+  const toClaude = item(['ping:aalhad/claude']);
+  const all = [bare, toCodex, toClaude];
+  const primary = P.classifyInbox(all, cctx(undefined));
+  assert.deepEqual(primary.map((x) => x.number), [bare.number, toClaude.number]);
+  assert.deepEqual(P.classifyInbox(all, cctx('claude')).map((x) => x.number), [bare.number, toClaude.number]);
+  const codex = P.classifyInbox(all, cctx('codex'));
+  assert.deepEqual(codex.map((x) => x.number), [toCodex.number]);
+  assert.equal(codex[0].reason, 'labelled ping:aalhad/codex');
+  assert.deepEqual(P.classifyInbox(all, cctx('ghost')), []);
+});
+
+test('classifyInbox: to:<handle> is claimable by any agent, to:<handle/agent> by that agent only', () => {
+  const any = item(['status:ready', 'to:aalhad']);
+  const onlyCodex = item(['status:ready', 'to:aalhad/codex']);
+  const reviewCodex = item(['status:review', 'to:aalhad/codex'], { isPR: true });
+  const all = [any, onlyCodex, reviewCodex];
+  assert.deepEqual(P.classifyInbox(all, cctx('claude')).map((x) => x.number), [any.number]);
+  const codex = P.classifyInbox(all, cctx('codex'));
+  assert.deepEqual(codex.map((x) => x.bucketName), ['review', 'routed', 'routed']);
+  assert.deepEqual(codex.map((x) => x.number), [reviewCodex.number, any.number, onlyCodex.number]);
+  assert.equal(codex[0].reason, 'review requested (to:aalhad/codex)');
+});
+
+test('classifyInbox: triage duty goes to the primary agent only; WIP is per agent', () => {
+  const t = item(['status:triage']);
+  assert.equal(P.classifyInbox([t], cctx('claude')).length, 1);
+  assert.deepEqual(P.classifyInbox([t], cctx('codex')), []);
+  const m = item(['status:ready', 'to:any']);
+  // codex wip is 1, claude wip is 2
+  assert.equal(P.classifyInbox([m], cctx('claude', { myLiveClaimCount: 1 })).length, 1);
+  assert.equal(P.classifyInbox([m], cctx('codex', { myLiveClaimCount: 1 })).length, 0);
+  assert.match(P.classifyInbox([m], cctx('codex', { myLiveClaimCount: 0 }))[0].reason, /0\/1 claims held/);
+});
+
+test('classifyInbox: a single-agent member answers to both its handle and handle/agent', () => {
+  const bobItems = [item(['ping:bob/claude']), item(['status:ready', 'to:bob/claude']), item(['ping:bob'])];
+  assert.equal(P.classifyInbox(bobItems, { me: BOB, config: mcfg, now: NOW }).length, 3);
+  assert.deepEqual(P.classifyInbox(bobItems, { me: CHEN, config: mcfg, now: NOW }), []);
+});
