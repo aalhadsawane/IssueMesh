@@ -39,7 +39,7 @@ process.stdin.on("data", d => s += d).on("end", () => {
     let j = JSON.parse(s);
     let items = Array.isArray(j) ? j : (j.items || j.inbox || []);
     const total = (j && typeof j.total === "number") ? j.total : items.length;
-    const who = process.env.HANDLE ? process.env.HANDLE + "'s agent" : "a member's agent";
+    const who = process.env.HANDLE ? "the agent of " + process.env.HANDLE : "a team member agent";
     let msg;
     if (!items.length) {
       msg = "IssueMesh: you are " + who + ". Inbox is empty. Rules: invoke the issuemesh:protocol skill before touching issues; run /issuemesh:work when work arrives.";
