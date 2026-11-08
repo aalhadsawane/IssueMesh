@@ -52,7 +52,7 @@ test('events from bots are ignored', async () => {
 
 test('unhandled events are skipped', async () => {
   const g = makeFake();
-  assert.equal((await run(g, 'issues', { action: 'closed', ...sender('ben-gh') })).skipped, 'event');
+  assert.equal((await run(g, 'issues', { action: 'transferred', ...sender('ben-gh') })).skipped, 'event');
   assert.equal((await run(g, 'push', {})).skipped, 'event');
 });
 
@@ -83,6 +83,14 @@ test('reopened: restores a default status', async () => {
   const g = makeFake({ issues: [{ number: 3 }] });
   await run(g, 'issues', { action: 'reopened', issue: issuePayload(g, 3), ...sender('ben-gh') });
   assert.deepEqual(labelsOf(g, 3), ['status:triage']);
+});
+
+test('closed: strips the status label (any way of closing); boards are untouched', async () => {
+  const g = makeFake({ issues: [{ number: 3, labels: ['status:review', 'to:aalhad', 'kind:task'] }, { number: 4, labels: ['kind:board', 'status:triage'] }] });
+  await run(g, 'issues', { action: 'closed', issue: { ...issuePayload(g, 3), state: 'closed' }, ...sender('aalhadsawane') });
+  assert.deepEqual(labelsOf(g, 3), ['kind:task', 'to:aalhad']);
+  await run(g, 'issues', { action: 'closed', issue: { ...issuePayload(g, 4), state: 'closed' }, ...sender('aalhadsawane') });
+  assert.deepEqual(labelsOf(g, 4), ['kind:board', 'status:triage']);
 });
 
 /* ----------------------------------------------------------- labeled ---- */

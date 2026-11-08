@@ -17,6 +17,7 @@ const { wakeActions } = require('./wake');
 const HANDLERS = {
   opened: require('./handlers/opened'),
   reopened: require('./handlers/opened'),
+  closed: require('./handlers/closed'),
   labeled: require('./handlers/labeled'),
   assigned: require('./handlers/assigned'),
   unassigned: require('./handlers/unassigned'),
@@ -30,7 +31,7 @@ const HANDLERS = {
 function route(eventName, payload) {
   const action = payload && payload.action;
   switch (eventName) {
-    case 'issues': return ['opened', 'reopened', 'labeled', 'assigned', 'unassigned'].includes(action) ? action : null;
+    case 'issues': return ['opened', 'reopened', 'closed', 'labeled', 'assigned', 'unassigned'].includes(action) ? action : null;
     case 'issue_comment': return action === 'created' || action === 'edited' ? 'comment' : null;
     case 'pull_request':
     case 'pull_request_target': return 'pullRequest';
