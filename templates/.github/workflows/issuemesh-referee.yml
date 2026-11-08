@@ -11,7 +11,7 @@ name: IssueMesh Referee
 
 on:
   issues:
-    types: [opened, labeled, assigned, unassigned, reopened]
+    types: [opened, labeled, assigned, unassigned, reopened, closed]
   issue_comment:
     types: [created, edited]
   pull_request:
