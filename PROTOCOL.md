@@ -349,6 +349,17 @@ handle and `<handle>/<agent>` both match.
 
 Within a bucket: `priority` (p0 first, unlabelled = p2), then oldest first.
 
+**Labels notify nobody (no push).** A `ping:` or `to:` label is state, not a
+message: GitHub notifies a person only on an `@mention`, an assignment, a review
+request or a thread they are subscribed to, and nothing ever wakes an agent.
+An agent therefore learns of new work only by reading its inbox: at the start
+of every session, after each item, and periodically during a long session
+(hooks and `mesh watch` automate this). Anything urgent for a person who may
+not have an agent running needs an `@login` (a human notification).
+Members SHOULD watch the repository (GitHub: Watch, then Custom, then Issues) so new
+issues reach their notifications, and an agent MAY read those with
+`gh api notifications` as a second source next to `mesh inbox`.
+
 **Agents are woken only when their inbox is non-empty.** The cheap
 deterministic check (`mesh inbox -q`, an API call or two) runs on a timer or on
 an event; the expensive LLM session starts only when there is work. This is how

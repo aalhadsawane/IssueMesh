@@ -19,13 +19,17 @@ async function sweepIssue(issue, { config, now, api }) {
   if (plan.state.status !== 'claimed' || plan.state.kind === 'board') return [];
 
   const byId = new Map(comments.map((c) => [c.id, c]));
-  const dead = P.extractClaims(comments, opts).filter((c) => c.type === 'claim'); // none is live
+  const records = P.extractClaims(comments, opts); // claim and released markers, human /claim comments
+  const dead = records.filter((c) => c.type === 'claim'); // none is live
   const logins = new Set(dead.map((c) => c.login));
   // a human claim recorded by the referee carries the bot's login: unassign the claiming member instead
   for (const c of dead) { const m = C.memberByHandle(config, c.handle); if (m) logins.add(m.github); }
 
-  if (dead.length === 0) {
-    // claimed with no claim record (label set by hand): give the human lease from last activity
+  if (records.length > 0 && dead.length === 0) {
+    // only released claims on record yet still status:claimed: a stale label (e.g. revived by a late event). Reset now.
+    for (const c of records) { const m = C.memberByHandle(config, c.handle); if (m) logins.add(m.github); }
+  } else if (dead.length === 0) {
+    // claimed with no claim record at all (label set by hand): give the human lease from last activity
     const touched = new Date(issue.updated_at);
     if (!Number.isNaN(touched.getTime()) && touched.getTime() + config.policy.lease_minutes.human * 60000 > now.getTime()) return [];
     for (const a of issue.assignees || []) if (C.isMember(config, a.login)) logins.add(a.login);
