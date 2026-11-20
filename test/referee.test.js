@@ -502,6 +502,25 @@ test('sweep: claimed with no claim record uses issue activity for a human lease'
   assert.deepEqual(g.issues.get(4).assignees, []);
 });
 
+test('sweep: status:claimed with only a released claim on record is reset at once (stale label)', async () => {
+  const g = makeFake({ issues: [
+    { number: 1, labels: ['kind:board'] },
+    { number: 3, labels: ['status:claimed', 'to:ben'], assignees: ['ben-gh'], updated_at: iso(-5), comments: [{ id: 1, body: P.replaceMarker(claimBody('ben', iso(60)), { type: 'released', reason: 'done' }), user: user('ben-gh'), created_at: iso(-300) }] },
+  ] });
+  await run(g, 'schedule', {});
+  assert.deepEqual(labelsOf(g, 3), ['status:ready', 'to:ben']);
+  assert.deepEqual(g.issues.get(3).assignees, []);
+});
+
+test('comment: a late edited-event for a claim that was released since does not revive it', async () => {
+  const stale = { id: 1, body: claimBody('ben', iso(60)), user: user('ben-gh'), created_at: iso(-30), updated_at: iso(-3) };
+  const released = { ...stale, body: P.replaceMarker(stale.body, { type: 'released', reason: 'done' }), updated_at: iso(-1) };
+  const g = makeFake({ issues: [{ number: 3, labels: ['status:ready', 'to:ben'], assignees: [], comments: [released] }] });
+  await run(g, 'issue_comment', { action: 'edited', issue: issuePayload(g, 3), comment: stale, ...sender('ben-gh') });
+  assert.deepEqual(labelsOf(g, 3), ['status:ready', 'to:ben']);
+  assert.deepEqual(g.issues.get(3).assignees, []);
+});
+
 test('sweep: rotates a Board with more than 200 comments', async () => {
   const g = makeFake({ issues: [{ number: 1, labels: ['kind:board'], comments: Array.from({ length: 201 }, (_, i) => ({ id: 1000 + i, body: 'x', user: user('ben-gh'), created_at: iso(-1) })) }] });
   await run(g, 'schedule', {});

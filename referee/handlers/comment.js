@@ -34,7 +34,13 @@ module.exports = async function onComment({ payload, config, now, api }) {
   if (!created && !isClaim) return [];
 
   const [labels, fetched] = await Promise.all([api.listLabels(issue.number), api.listComments(issue.number)]);
-  const comments = fetched.filter((c) => c.id !== comment.id).concat([comment]);
+  // The event payload is a snapshot from when the event fired. A later edit (e.g. the claimant released the claim a
+  // moment after a status edit) may already be live: use whichever copy of this comment is newer, so a late event
+  // can never revive a claim that has since been released.
+  const live = fetched.find((c) => c.id === comment.id);
+  const ts = (c) => Date.parse((c && (c.updated_at || c.created_at)) || '') || 0;
+  const effective = live && ts(live) > ts(comment) ? live : comment;
+  const comments = fetched.filter((c) => c.id !== comment.id).concat([effective]);
   const byId = new Map(comments.map((c) => [c.id, c]));
   const plan = new Plan(issue.number, labels, (issue.assignees || []).map((a) => a.login));
   const opts = claimOpts(config, now);

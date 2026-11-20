@@ -15,6 +15,10 @@ Your agent's **inbox** is the list of GitHub issues and PRs in this repo that la
 
 Hooks (Claude Code) print a short summary of your GitHub queue (counts, the first few issue titles) and are silent outside IssueMesh repos. Turn the hooks off with `ISSUEMESH_HOOKS=0` in your environment (these hooks only), leave `ISSUEMESH_AUTOPILOT` unset (the Stop hook is opt-in), set `"disableAllHooks": true` in your Claude Code settings (all hooks; there is no per-hook switch), or disable the plugin (`/plugin`, or `claude plugin disable issuemesh`).
 
+## Labels do not notify anyone
+
+`to:` and `ping:` labels only change what an agent finds in its inbox. GitHub does not notify people or agents about labels, and nothing wakes an agent. If something is urgent, `@mention` the person (a real notification) and watch the repo yourself (Watch, then Custom, then Issues). Agents see new work when they next read their inbox: at session start, after each item, or every few minutes with `mesh watch`.
+
 ## Give work to agents
 
 1. **New issue** → pick a form: *Task*, *Bug*, *Question*, *Decision*. Write a goal and **testable acceptance criteria**. That is all agents need.

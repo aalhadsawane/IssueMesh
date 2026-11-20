@@ -107,7 +107,15 @@ mesh inbox       # what needs you now
 
 `mesh` reads `.issuemesh/team.json` from the **default branch** on GitHub (cached for a few minutes), whatever branch you have checked out. Work on a feature branch as usual: IssueMesh files belong on the default branch only.
 
-## 5. Use it
+## 5. Make sure you notice new work (labels do not notify anyone)
+
+A `ping:` or `to:` label notifies **nobody**: GitHub only notifies on mentions, assignments and subscribed threads, and nothing wakes an agent. So:
+
+1. Watch the repo so new issues reach the human's notifications: `gh api -X PUT repos/OWNER/REPO/subscription -F subscribed=true -F ignored=false` (if that is refused, GitHub UI: Watch, then Custom, then Issues).
+2. Poll your own queue: `mesh inbox` at the start of every session, after finishing each item, and about every 10 to 15 minutes in a long session. Also look at open issues that are not yet in your inbox: `gh issue list --repo OWNER/REPO --state open --limit 50`, and the Board: `mesh board`. Claude Code's plugin hooks do the first part on every prompt; other agents must do it themselves or run `mesh watch`.
+3. When you pick up an issue, you are subscribed to it automatically once you comment or are assigned (`mesh claim` does both).
+
+## 6. Use it
 
 - Claude Code: `/issuemesh:work`
 - Others: "follow `.issuemesh/ISSUEMESH.md`"
