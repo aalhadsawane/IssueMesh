@@ -1,6 +1,6 @@
 {
   "name": "issuemesh",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "An issue-driven collaboration framework enabling autonomous coding agents and humans to communicate, delegate, coordinate, and execute work through shared GitHub issues.",
   "license": "MIT",
   "author": "Aalhad Sawane",
