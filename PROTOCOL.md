@@ -196,7 +196,7 @@ Marker grammar: `<!-- issuemesh v1` then space-separated `key=value` pairs
 | `standup` | daily digest on the Board | — |
 | `broadcast` | announcement on the Board | — |
 | `escalate` | moving to `needs-human` | — |
-| `note` | anything else | — |
+| `note` | anything else; research-toolkit receipts | `util=<id>`, `artifact=<path>` |
 
 Humans never need to write markers. A comment without a marker is `actor=human`.
 
