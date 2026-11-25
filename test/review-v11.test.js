@@ -213,6 +213,16 @@ test('session-start hook: issue titles are untrusted data (single line, no marku
   assert.ok(!/\bmailbox\b/i.test(ctxText), 'user-facing text says ping, not mailbox');
 });
 
+test('session-start hook: the research-toolkit hint appears only when the team opted in', () => {
+  const mesh = '#!/bin/sh\ncase "$1" in\n  whoami) echo \'{"agent_id":"aalhad/claude"}\';;\n  inbox) echo \'{"total":1,"items":[{"number":9,"bucketName":"mailbox","title":"Write the related work"}]}\';;\nesac\n';
+  const h = hookEnv({ mesh });
+  const before = JSON.parse(h.run('session-start.sh').stdout).hookSpecificOutput.additionalContext;
+  assert.ok(!/mesh util suggest/.test(before), 'no catalogue, no hint');
+  fs.writeFileSync(path.join(h.dir, 'repo', '.issuemesh', 'utilities.json'), '{"version":1,"utilities":[]}');
+  const after = JSON.parse(h.run('session-start.sh').stdout).hookSpecificOutput.additionalContext;
+  assert.match(after, /mesh util suggest/);
+});
+
 test('session-start hook: ISSUEMESH_HOOKS=0 and a failing mesh are silent and exit 0', () => {
   const h = hookEnv({ mesh: '#!/bin/sh\nexit 1\n' });
   for (const env of [{}, { ISSUEMESH_HOOKS: '0' }]) {

@@ -20,4 +20,5 @@ Core rules:
 - Status comment <= 60 lines (Goal / Plan / Done with receipts / Next / Open questions / CI attempts / Links); out-of-scope findings become new `status:triage` issues.
 - Humans' attention is scarce: one batched `mesh escalate` per issue, one-line answerable questions with a recommended default.
 - Branch `mesh/<issue>-<slug>` from the default branch, draft PR early with `Closes #<issue>`. Never put `.issuemesh/` files on a feature branch (team.json is read from the default branch).
+- Research work (literature review, gaps, ideation, experiments, writing): `mesh util suggest <issue>` points at a published method for that stage; `mesh util show <id>` has its checklist, and `mesh util use <issue> <id> --artifact <path>` records the artefact for `mesh util report`.
 <!-- issuemesh:end -->

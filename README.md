@@ -146,6 +146,40 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 - **13:00** The API change needs a schema migration. Dev's agent stops and escalates once: a single comment, two options, a recommended default, `@aalhadsawane`. Aalhad answers with a one-liner. Work resumes.
 - **17:00** Each agent has posted one standup on the Board. Aalhad reads five short digests and the one open escalation. That was his entire coordination overhead.
 
+## Research toolkit
+
+Research work moves through stages — literature review, gap finding, ideation,
+codification, writing — and each stage has published methods that are easy to lose
+once the work is split across agents and issues. `mesh util` keeps a small
+catalogue of those methods next to the work, suggests the one that fits an item's
+stage, and records the artefact it produced on the issue itself.
+
+```sh
+mesh util list                 # the catalogue, grouped by stage (12 methods ship with the package)
+mesh util suggest 42           # what fits this issue, and which phrases matched
+mesh util show arbor           # paper, inputs, outputs, checklist
+mesh util use 42 arbor --artifact codification/ITERATION_2.md
+mesh util report               # the receipt table: utility, paper, issue, artefact, when recorded
+```
+
+`suggest` is deterministic — no model call, no API key — and prints the phrases it
+matched, so a wrong suggestion is visible. Nothing is posted until `use`, which
+adds one `type=note` comment with `util=<id> artifact=<path>`; `report` merges
+those live receipts with any `used_in` records in the catalogue (marked
+`retroactive`). Teams add their own methods, or record historical usage, with a
+partial override in `.issuemesh/utilities.json`:
+
+```json
+{ "version": 1, "utilities": [
+  { "id": "researchagent", "used_in": [{ "issue": 6, "artifact": "ideation/REPORT.md", "commit": "e5f3383" }] }
+] }
+```
+
+The catalogue is also exportable as a skill for runtimes that do not use the
+Claude Code plugin (`mesh util export --format claude|opencode|agents`). Full
+guide, including the catalogue format and the design rationale for keeping the
+ledger in issue comments: [docs/research-toolkit.md](docs/research-toolkit.md).
+
 ## Features
 
 - **Several agents per member**: a member can run named agents (`aalhad/claude`, `aalhad/codex`) with their own pings, WIP and runtime; reviews can go to the agent with a different runtime.
@@ -156,6 +190,7 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 - **Receipts and fresh-eyes review**: "done" needs evidence; reviewers judge independently, prefer a different agent runtime, and must name weaknesses or what they checked.
 - **Lazy-consensus decisions** with a mandatory steelman and a critique from another member's agent.
 - **Triage rotation**, WIP limits, `human-only` and `/hold` stop switches, a loop guard that stops agent-to-agent echo chambers, and `size:l` auto-split rule.
+- **Research toolkit**: a catalogue of published methods mapped to the stage of an item, deterministic suggestions (`mesh util suggest`), and a receipt ledger in the issue itself (`mesh util use`, `mesh util report`) — so "we used this method and it produced that artefact" is checkable ([docs/research-toolkit.md](docs/research-toolkit.md)).
 - **Optional referee Action**: slash commands, label hygiene, claim arbitration, lease sweep, Board rotation, optional wake of CI-hosted agents.
 - **A real CLI**: `mesh join | inbox | claim | status | release | handoff | post | ping | route | escalate | board | standup | watch | doctor | ...` (`mesh help`).
 - **Claude Code plugin** with skills: `/issuemesh:work`, `inbox`, `triage`, `new`, `review`, `board`, `standup`, `setup`, `protocol`, `decision`, `plan`, `retro`, and hooks that show your GitHub queue at session start and flag new work on your next prompt (opt-in autopilot on Stop).
@@ -177,6 +212,7 @@ Five members: Aalhad (backend, triage today), Ben (frontend), Chen (data), Dev (
 | [docs/setup.md](docs/setup.md) | Team owner and member setup, `team.json` reference, upgrading |
 | [docs/for-humans.md](docs/for-humans.md) | One-page cheat sheet: giving work, stopping agents, answering escalations |
 | [docs/concepts.md](docs/concepts.md) | Mental model: labels, claims, inbox, Board, decisions, cadence |
+| [docs/research-toolkit.md](docs/research-toolkit.md) | `mesh util`: catalogue of published methods, suggestions, receipt ledger, skill export |
 | [docs/runners.md](docs/runners.md) | Interactive, `mesh watch`, cron, GitHub Actions; cost control |
 | [docs/security.md](docs/security.md) | Threat model, prompt injection, tokens |
 | [docs/faq.md](docs/faq.md) | Common questions |

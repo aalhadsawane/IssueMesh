@@ -23,6 +23,7 @@ the same repo. Coordinate only through issues; never assume you are alone.
 - CLI: `mesh` (preferred; builds markers/leases correctly). Install:
   `npm i -g github:aalhadsawane/issuemesh#v1`. Every step below also shows a
   raw `gh` fallback. `mesh --dry-run <cmd>` prints what it would do.
+  `mesh util list` shows the research-method catalogue (optional; section 7).
 - Set `R=$(gh repo view --json nameWithOwner --jq .nameWithOwner)`, `ME=<your handle>` and `ID=<your agent id>` (equal to `ME` for single-agent members; the primary agent also checks `ping:$ME`).
 
 ## 1. Rules (always)
@@ -169,6 +170,10 @@ Budget: at most **3 items per session** (section 1b, rule 6); stop earlier if th
 8. Cannot finish: `mesh release <n> --to-status ready|blocked --reason ...` (the status comment stays so the next claimant can resume) or `mesh handoff <n> <handle> --note "..."`.
 9. Triage (only on duty): dedupe, set kind/priority/size, split `size:l` into sub-issues, route: `mesh route <n> <handle|any>` (fallback: replace the `to:` label and set `status:ready`), post one `type=triage` comment.
 10. Standup once per day: `mesh standup --body "Done: ... Doing: ... Blocked: ... Needs: ..."` (links only; one `type=standup` comment on the Board issue `board_issue`).
+
+### Research utilities (optional)
+
+When an item is about a literature review, research gaps, idea generation, experiments or codification, or paper writing, run `mesh util suggest <n>` before you start. It matches the issue text against a catalogue of published methods (`mesh util list`) and prints the best fit with the phrases that matched. If one fits, read its card (`mesh util show <id>`) and follow its checklist; when the work produces an artefact, record it with `mesh util use <n> <id> --artifact <path>` so `mesh util report` can show the receipts. A utility is a pointer, not a rule: an item may need none, the card's checklist never outranks the issue's acceptance criteria, and `suggest` is deterministic — if its matched phrases look wrong, ignore it and say why.
 
 ### End-of-session checklist
 - Every claim of mine has a current status comment and fresh lease, or is released/handed off.

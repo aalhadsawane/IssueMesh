@@ -1,0 +1,237 @@
+{
+  "version": 1,
+  "utilities": [
+    {
+      "id": "surveygen",
+      "name": "SurveyGen",
+      "stage": ["literature-review"],
+      "paper": {
+        "title": "SurveyGen: Quality-Aware Scientific Survey Generation with Large Language Models",
+        "arxiv": "2508.17647"
+      },
+      "what": "Retrieve, outline and write a scientific survey, then score the draft for reference quality before a human reads it.",
+      "when": ["literature review", "related work", "survey", "state of the art", "retrieval", "overlap with the anchor"],
+      "inputs": ["topic or research question", "anchor paper", "retrieval corpus (OpenAlex, arXiv, Semantic Scholar)"],
+      "outputs": ["survey draft", "reference list", "quality and overlap report"],
+      "cost": "cpu",
+      "checklist": [
+        "freeze the retrieval date and record every query string",
+        "verify each kept reference against its full text, not the abstract",
+        "report overlap with the anchor paper's related work, with counts",
+        "state what the survey misses before anyone cites it"
+      ]
+    },
+    {
+      "id": "llm-litreview",
+      "name": "LLM automated literature review (evaluation)",
+      "stage": ["literature-review"],
+      "paper": {
+        "title": "Large Language Models for Automated Literature Review: An Evaluation of Reference Generation, Abstract Writing, and Review Composition",
+        "arxiv": "2412.13612"
+      },
+      "what": "An evaluation protocol for LLM-generated reviews: check reference existence, abstract fidelity and review composition separately.",
+      "when": ["reference generation", "abstract writing", "review composition", "hallucinated citations", "review evaluation"],
+      "inputs": ["generated review", "its reference list", "source papers"],
+      "outputs": ["error breakdown by stage", "reference-verification table"],
+      "cost": "cpu",
+      "checklist": [
+        "score reference existence separately from writing quality",
+        "count fabricated or mismatched references explicitly",
+        "do not let a fluent review hide a bad reference list"
+      ]
+    },
+    {
+      "id": "limitations-multiagent",
+      "name": "Multi-agent limitation generation",
+      "stage": ["gaps"],
+      "paper": {
+        "title": "Multi-Agent LLMs for Generating Research Limitations",
+        "arxiv": "2601.11578"
+      },
+      "what": "Split limitation finding across extractor, analyzer, reviewer and judge roles so each gap is argued and then checked.",
+      "when": ["research gap", "limitations", "open problems", "weaknesses of the anchor", "gap extraction"],
+      "inputs": ["anchor paper full text", "survey or related work", "role prompts"],
+      "outputs": ["bulleted gaps", "one problem statement", "role-by-role audit trail"],
+      "cost": "cpu",
+      "checklist": [
+        "quote the passage that supports each gap",
+        "keep the extractor and the judge separate",
+        "report coverage: which sections were read",
+        "one paragraph of problem definition, not a wish list"
+      ]
+    },
+    {
+      "id": "llm-limitations",
+      "name": "Can LLMs identify critical limitations?",
+      "stage": ["gaps"],
+      "paper": {
+        "title": "Can LLMs Identify Critical Limitations within Scientific Research? A Systematic Evaluation on AI Research Papers",
+        "arxiv": "2507.02694"
+      },
+      "what": "A benchmark and taxonomy for judging whether a model's limitation list is specific, evidence-backed and non-obvious.",
+      "when": ["limitation quality", "critique", "peer review", "is this gap real", "novelty check"],
+      "inputs": ["paper", "candidate limitations"],
+      "outputs": ["limitation taxonomy", "quality verdict per gap"],
+      "cost": "cpu",
+      "checklist": [
+        "classify each gap against the taxonomy before ranking",
+        "drop generic gaps (\"more datasets needed\") unless evidenced",
+        "mark anything the authors already acknowledge"
+      ]
+    },
+    {
+      "id": "bagels",
+      "name": "BAGELS",
+      "stage": ["gaps"],
+      "paper": {
+        "title": "BAGELS: Benchmarking the Automated Generation and Extraction of Limitations from Scholarly Text",
+        "arxiv": "2505.18207"
+      },
+      "what": "Benchmark for extracting stated limitations from papers, useful as a sanity check that a gap is author-stated rather than invented.",
+      "when": ["stated limitations", "extraction", "benchmark", "author-stated gap"],
+      "inputs": ["paper text", "extraction prompt"],
+      "outputs": ["extracted limitation spans", "precision/recall against gold"],
+      "cost": "cpu",
+      "checklist": [
+        "separate stated limitations from inferred ones",
+        "keep the extraction spans so a human can check them",
+        "never present an inferred gap as author-stated"
+      ]
+    },
+    {
+      "id": "hyper",
+      "name": "HypER",
+      "stage": ["ideation"],
+      "paper": {
+        "title": "HypER: Literature-grounded Hypothesis Generation and Distillation with Provenance",
+        "arxiv": "2506.12937"
+      },
+      "what": "Generate hypotheses grounded in retrieved literature and keep the provenance chain from paper to claim to hypothesis.",
+      "when": ["hypothesis generation", "provenance", "literature-grounded idea", "novelty"],
+      "inputs": ["research problem", "retrieved literature", "provenance requirements"],
+      "outputs": ["hypotheses with citation trails", "distilled statements"],
+      "cost": "cpu",
+      "checklist": [
+        "attach at least one verified source to each hypothesis",
+        "separate the hypothesis from the method that would test it",
+        "flag ideas whose only support is another LLM output"
+      ]
+    },
+    {
+      "id": "researchagent",
+      "name": "ResearchAgent",
+      "stage": ["ideation"],
+      "paper": {
+        "title": "ResearchAgent: Iterative Research Idea Generation over Scientific Literature with Large Language Models",
+        "arxiv": "2404.07738"
+      },
+      "what": "Generate, review and refine research ideas over a literature context with reviewing agents scoring novelty, feasibility, clarity and impact.",
+      "when": ["research ideas", "ideation", "rank ideas", "novelty feasibility impact", "reviewing agents"],
+      "inputs": ["research problem", "literature context", "scoring rubric"],
+      "outputs": ["ranked ideas", "method sketches", "reviewer scores"],
+      "cost": "cpu",
+      "checklist": [
+        "fix the rubric and the number of reviewer rounds before generating",
+        "keep every idea, including the rejected ones, with its scores",
+        "record why the chosen idea was chosen, not only its rank",
+        "check that each idea names a dataset, metric and baseline"
+      ]
+    },
+    {
+      "id": "hypoevolve",
+      "name": "HypoEvolve",
+      "stage": ["ideation"],
+      "paper": {
+        "title": "HypoEvolve: Genetic Algorithms Enable Multi-Agent LLMs to Discover Scientific Hypotheses",
+        "arxiv": "2609.15938"
+      },
+      "what": "Evolve a population of hypotheses with mutation and selection instead of a single chain of suggestions.",
+      "when": ["hypothesis search", "evolutionary", "population", "diversity of ideas"],
+      "inputs": ["seed hypotheses", "fitness criteria", "generations budget"],
+      "outputs": ["evolved hypotheses", "lineage and fitness log"],
+      "cost": "cpu",
+      "checklist": [
+        "log the lineage of every surviving hypothesis",
+        "keep the fitness function fixed across generations",
+        "report the best seed as well as the evolved result"
+      ]
+    },
+    {
+      "id": "deepscientist",
+      "name": "DeepScientist",
+      "stage": ["codification"],
+      "paper": {
+        "title": "DeepScientist: Advancing Frontier-Pushing Scientific Findings Progressively",
+        "arxiv": "2509.26603"
+      },
+      "what": "Treat discovery as Bayesian optimisation over a memory of findings, so each experiment is chosen against what is already known.",
+      "when": ["experiment selection", "research memory", "findings", "progressive discovery"],
+      "inputs": ["findings memory", "candidate experiments", "budget"],
+      "outputs": ["ranked experiment queue", "updated findings memory"],
+      "cost": "cpu",
+      "checklist": [
+        "record negative findings too; they are what stops repeats",
+        "state the expected information gain before spending compute",
+        "keep the memory in the repo, not in a chat"
+      ]
+    },
+    {
+      "id": "arbor",
+      "name": "Arbor",
+      "stage": ["codification"],
+      "paper": {
+        "title": "Toward Generalist Autonomous Research via Hypothesis-Tree Refinement",
+        "arxiv": "2606.11926"
+      },
+      "what": "A long-lived coordinator with short-lived executors refines a tree of hypotheses and accepts a change only if it also holds on held-out data.",
+      "when": ["codify an idea", "agent search", "hypothesis tree", "held-out gate", "selector"],
+      "inputs": ["idea specification", "protected evaluation harness", "dev and held-out splits"],
+      "outputs": ["accepted changes", "tree of attempts", "held-out scores"],
+      "cost": "gpu",
+      "checklist": [
+        "protect the held-out split before the search starts",
+        "review each proposed change before it runs",
+        "compare against the strongest simple baseline, not the seed",
+        "keep the rejected branches; they are the audit trail"
+      ]
+    },
+    {
+      "id": "autosota",
+      "name": "AutoSOTA",
+      "stage": ["codification"],
+      "paper": {
+        "title": "AutoSOTA: An End-to-End Automated Research System for State-of-the-Art AI Model Discovery",
+        "arxiv": "2604.05550"
+      },
+      "what": "An end-to-end loop that proposes, implements and evaluates model changes against a fixed benchmark.",
+      "when": ["state of the art", "model discovery", "benchmark loop", "end-to-end automation"],
+      "inputs": ["benchmark", "baseline", "compute budget"],
+      "outputs": ["candidate models", "benchmark deltas", "run log"],
+      "cost": "gpu",
+      "checklist": [
+        "pin the benchmark version and the split",
+        "report the baseline you actually reproduced, not the paper's number",
+        "keep failed candidates in the log"
+      ]
+    },
+    {
+      "id": "evoscientist",
+      "name": "EvoScientist",
+      "stage": ["codification"],
+      "paper": {
+        "title": "EvoScientist: Towards Multi-Agent Evolving AI Scientists for End-to-End Scientific Discovery",
+        "arxiv": "2603.08127"
+      },
+      "what": "Multi-agent system that evolves its own research strategy across ideation, experimentation and writing.",
+      "when": ["multi-agent research", "self-evolving", "end-to-end discovery", "strategy evolution"],
+      "inputs": ["research goal", "agent roles", "evaluation signal"],
+      "outputs": ["evolved strategy", "per-stage artefacts", "run log"],
+      "cost": "gpu",
+      "checklist": [
+        "keep the evaluation signal out of the agents' reach",
+        "record which strategy changed and why",
+        "separate gains from the strategy from gains from more compute"
+      ]
+    }
+  ]
+}
