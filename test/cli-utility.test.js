@@ -117,6 +117,7 @@ test('util report: merges live receipts with retroactive used_in records', async
     utilities: [
       { id: 'surveygen', used_in: [{ issue: 4, artifact: 'litreview/REPORT.md', commit: 'e5f3383', recorded: 'retroactive' }] },
       { id: 'team-checklist', name: 'Team checklist', stage: ['writing'], what: 'Internal checklist', when: ['final read'] },
+      { id: 'hyper', used_in: [{ artifact: 'ideation/HYPER_NOTES.md', commit: 'abc1234' }] },
     ],
   });
   const n = env.fake.addIssue({ title: 'Ideation' });
@@ -133,9 +134,15 @@ test('util report: merges live receipts with retroactive used_in records', async
   assert.equal(research.recorded, 'comment');
   assert.equal(research.artifact, 'ideation/REPORT.md');
 
+  // an artefact recorded without an issue (work done before IssueMesh was adopted) is still a row
+  const hyper = rows.find((r) => r.id === 'hyper');
+  assert.equal(hyper.issue, null);
+  assert.equal(hyper.recorded, 'retroactive');
+
   const md = await env.run(['util', 'report']);
   assert.match(md.out, /\| Utility \| Paper \| Stage \| Issue \| Artifact \| Recorded \|/);
-  assert.match(md.out, /13 of 13|0 of 13|receipt\(s\) shown/);
+  assert.match(md.out, /receipt\(s\) shown/);
+  assert.match(md.out, /\| — \| `ideation\/HYPER_NOTES\.md` @ abc1234 \| retroactive \|/);
 });
 
 test('util export: writes a skill for claude/opencode and a doc for agents, refuses to overwrite', async () => {

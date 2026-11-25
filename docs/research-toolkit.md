@@ -72,7 +72,9 @@ A full entry has: `id`, `name`, `stage` (one or more of `literature-review`,
 `gaps`, `ideation`, `codification`, `writing`), `paper` (`title`, `arxiv`),
 `what`, `when` (phrases `suggest` matches), `inputs`, `outputs`, `cost`
 (`cpu` or `gpu`), `checklist`, `status` (`used`, `available`,
-`not-applicable`), and `used_in`.
+`not-applicable`), and `used_in` (each record needs `artifact`, and may carry
+`issue`, `commit` and `recorded: "retroactive"` — work done before IssueMesh was
+adopted has no issue number).
 
 `mesh util list` merges the two files by id and shows which entries are marked
 used. `mesh doctor` checks the merged catalogue and fails on a bad stage, a
